@@ -280,7 +280,7 @@ fn mega_30k_0000_blocks_building_stone() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 0 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -346,7 +346,7 @@ fn mega_30k_0001_blocks_building_dirt() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 1 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -412,7 +412,7 @@ fn mega_30k_0002_blocks_building_grass_block() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 2 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -478,7 +478,7 @@ fn mega_30k_0003_blocks_building_cobblestone() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 3 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -544,7 +544,7 @@ fn mega_30k_0004_blocks_building_oak_planks() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 4 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -610,7 +610,7 @@ fn mega_30k_0005_blocks_building_oak_log() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 5 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -676,7 +676,7 @@ fn mega_30k_0006_blocks_building_birch_log() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 6 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -742,7 +742,7 @@ fn mega_30k_0007_blocks_building_spruce_log() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 7 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -808,7 +808,7 @@ fn mega_30k_0008_blocks_building_glass() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 8 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -874,7 +874,7 @@ fn mega_30k_0009_blocks_building_bedrock() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 9 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -940,7 +940,7 @@ fn mega_30k_0010_blocks_building_sand() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 10 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -1006,7 +1006,7 @@ fn mega_30k_0011_blocks_building_gravel() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 11 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -1072,7 +1072,7 @@ fn mega_30k_0012_blocks_building_gold_block() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 12 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -1138,7 +1138,7 @@ fn mega_30k_0013_blocks_building_iron_block() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 13 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -1204,7 +1204,7 @@ fn mega_30k_0014_blocks_building_diamond_block() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 14 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -1270,7 +1270,7 @@ fn mega_30k_0015_blocks_building_emerald_block() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 15 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -1336,7 +1336,7 @@ fn mega_30k_0016_blocks_building_obsidian() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 16 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -1402,7 +1402,7 @@ fn mega_30k_0017_blocks_building_bricks() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 17 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -1468,7 +1468,7 @@ fn mega_30k_0018_blocks_building_bookshelf() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 18 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -1534,7 +1534,7 @@ fn mega_30k_0019_blocks_building_mossy_cobblestone() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 19 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -1600,7 +1600,7 @@ fn mega_30k_0020_blocks_building_tnt() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 20 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -1666,7 +1666,7 @@ fn mega_30k_0021_blocks_building_furnace() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 21 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -1732,7 +1732,7 @@ fn mega_30k_0022_blocks_building_chest() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 22 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -1798,7 +1798,7 @@ fn mega_30k_0023_blocks_building_crafting_table() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 23 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -1864,7 +1864,7 @@ fn mega_30k_0024_blocks_building_anvil() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 24 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -1930,7 +1930,7 @@ fn mega_30k_0025_blocks_building_enchanting_table() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 25 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -1996,7 +1996,7 @@ fn mega_30k_0026_blocks_building_end_portal_frame() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 26 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -2062,7 +2062,7 @@ fn mega_30k_0027_blocks_building_command_block() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 27 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -2128,7 +2128,7 @@ fn mega_30k_0028_blocks_building_beacon() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 28 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -2194,7 +2194,7 @@ fn mega_30k_0029_blocks_building_redstone_block() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 29 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -2260,7 +2260,7 @@ fn mega_30k_0030_blocks_building_stone() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 30 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -2326,7 +2326,7 @@ fn mega_30k_0031_blocks_building_dirt() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 31 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -2392,7 +2392,7 @@ fn mega_30k_0032_blocks_building_grass_block() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 32 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -2458,7 +2458,7 @@ fn mega_30k_0033_blocks_building_cobblestone() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 33 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -2524,7 +2524,7 @@ fn mega_30k_0034_blocks_building_oak_planks() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 34 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -2590,7 +2590,7 @@ fn mega_30k_0035_blocks_building_oak_log() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 35 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -2656,7 +2656,7 @@ fn mega_30k_0036_blocks_building_birch_log() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 36 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -2722,7 +2722,7 @@ fn mega_30k_0037_blocks_building_spruce_log() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 37 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -2788,7 +2788,7 @@ fn mega_30k_0038_blocks_building_glass() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 38 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -2854,7 +2854,7 @@ fn mega_30k_0039_blocks_building_bedrock() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 39 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -2920,7 +2920,7 @@ fn mega_30k_0040_blocks_building_sand() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 40 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -2986,7 +2986,7 @@ fn mega_30k_0041_blocks_building_gravel() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 41 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -3052,7 +3052,7 @@ fn mega_30k_0042_blocks_building_gold_block() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 42 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -3118,7 +3118,7 @@ fn mega_30k_0043_blocks_building_iron_block() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 43 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -3184,7 +3184,7 @@ fn mega_30k_0044_blocks_building_diamond_block() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 44 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -3250,7 +3250,7 @@ fn mega_30k_0045_blocks_building_emerald_block() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 45 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -3316,7 +3316,7 @@ fn mega_30k_0046_blocks_building_obsidian() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 46 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -3382,7 +3382,7 @@ fn mega_30k_0047_blocks_building_bricks() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 47 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -3448,7 +3448,7 @@ fn mega_30k_0048_blocks_building_bookshelf() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 48 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -3514,7 +3514,7 @@ fn mega_30k_0049_blocks_building_mossy_cobblestone() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 49 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -3580,7 +3580,7 @@ fn mega_30k_0050_blocks_building_tnt() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 50 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -3646,7 +3646,7 @@ fn mega_30k_0051_blocks_building_furnace() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 51 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -3712,7 +3712,7 @@ fn mega_30k_0052_blocks_building_chest() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 52 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -3778,7 +3778,7 @@ fn mega_30k_0053_blocks_building_crafting_table() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 53 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -3844,7 +3844,7 @@ fn mega_30k_0054_blocks_building_anvil() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 54 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -3910,7 +3910,7 @@ fn mega_30k_0055_blocks_building_enchanting_table() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 55 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -3976,7 +3976,7 @@ fn mega_30k_0056_blocks_building_end_portal_frame() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 56 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -4042,7 +4042,7 @@ fn mega_30k_0057_blocks_building_command_block() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 57 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -4108,7 +4108,7 @@ fn mega_30k_0058_blocks_building_beacon() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 58 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -4174,7 +4174,7 @@ fn mega_30k_0059_blocks_building_redstone_block() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 59 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -4240,7 +4240,7 @@ fn mega_30k_0060_blocks_building_stone() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 60 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -4306,7 +4306,7 @@ fn mega_30k_0061_blocks_building_dirt() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 61 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -4372,7 +4372,7 @@ fn mega_30k_0062_blocks_building_grass_block() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 62 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -4438,7 +4438,7 @@ fn mega_30k_0063_blocks_building_cobblestone() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 63 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -4504,7 +4504,7 @@ fn mega_30k_0064_blocks_building_oak_planks() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 64 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -4570,7 +4570,7 @@ fn mega_30k_0065_blocks_building_oak_log() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 65 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -4636,7 +4636,7 @@ fn mega_30k_0066_blocks_building_birch_log() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 66 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -4702,7 +4702,7 @@ fn mega_30k_0067_blocks_building_spruce_log() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 67 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -4768,7 +4768,7 @@ fn mega_30k_0068_blocks_building_glass() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 68 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -4834,7 +4834,7 @@ fn mega_30k_0069_blocks_building_bedrock() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 69 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -4900,7 +4900,7 @@ fn mega_30k_0070_blocks_redstone_redstone_wire() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 70 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -4966,7 +4966,7 @@ fn mega_30k_0071_blocks_redstone_repeater() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 71 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -5032,7 +5032,7 @@ fn mega_30k_0072_blocks_redstone_comparator() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 72 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -5098,7 +5098,7 @@ fn mega_30k_0073_blocks_redstone_redstone_torch() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 73 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -5164,7 +5164,7 @@ fn mega_30k_0074_blocks_redstone_redstone_block() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 74 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -5230,7 +5230,7 @@ fn mega_30k_0075_blocks_redstone_piston() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 75 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -5296,7 +5296,7 @@ fn mega_30k_0076_blocks_redstone_sticky_piston() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 76 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -5362,7 +5362,7 @@ fn mega_30k_0077_blocks_redstone_observer() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 77 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -5428,7 +5428,7 @@ fn mega_30k_0078_blocks_redstone_dispenser() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 78 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -5494,7 +5494,7 @@ fn mega_30k_0079_blocks_redstone_dropper() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 79 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -5560,7 +5560,7 @@ fn mega_30k_0080_blocks_redstone_hopper() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 80 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -5626,7 +5626,7 @@ fn mega_30k_0081_blocks_redstone_target() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 81 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -5692,7 +5692,7 @@ fn mega_30k_0082_blocks_redstone_lightning_rod() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 82 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -5758,7 +5758,7 @@ fn mega_30k_0083_blocks_redstone_copper_bulb() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 83 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -5824,7 +5824,7 @@ fn mega_30k_0084_blocks_redstone_daylight_detector() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 84 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -5890,7 +5890,7 @@ fn mega_30k_0085_blocks_redstone_note_block() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 85 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -5956,7 +5956,7 @@ fn mega_30k_0086_blocks_redstone_powered_rail() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 86 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -6022,7 +6022,7 @@ fn mega_30k_0087_blocks_redstone_detector_rail() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 87 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -6088,7 +6088,7 @@ fn mega_30k_0088_blocks_redstone_activator_rail() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 88 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -6154,7 +6154,7 @@ fn mega_30k_0089_blocks_redstone_rail() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 89 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -6220,7 +6220,7 @@ fn mega_30k_0090_blocks_redstone_redstone_wire() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 90 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -6286,7 +6286,7 @@ fn mega_30k_0091_blocks_redstone_repeater() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 91 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -6352,7 +6352,7 @@ fn mega_30k_0092_blocks_redstone_comparator() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 92 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -6418,7 +6418,7 @@ fn mega_30k_0093_blocks_redstone_redstone_torch() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 93 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -6484,7 +6484,7 @@ fn mega_30k_0094_blocks_redstone_redstone_block() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 94 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -6550,7 +6550,7 @@ fn mega_30k_0095_blocks_redstone_piston() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 95 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -6616,7 +6616,7 @@ fn mega_30k_0096_blocks_redstone_sticky_piston() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 96 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -6682,7 +6682,7 @@ fn mega_30k_0097_blocks_redstone_observer() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 97 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -6748,7 +6748,7 @@ fn mega_30k_0098_blocks_redstone_dispenser() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 98 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -6814,7 +6814,7 @@ fn mega_30k_0099_blocks_redstone_dropper() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 99 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -6880,7 +6880,7 @@ fn mega_30k_0100_blocks_redstone_hopper() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 100 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -6946,7 +6946,7 @@ fn mega_30k_0101_blocks_redstone_target() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 101 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -7012,7 +7012,7 @@ fn mega_30k_0102_blocks_redstone_lightning_rod() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 102 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -7078,7 +7078,7 @@ fn mega_30k_0103_blocks_redstone_copper_bulb() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 103 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -7144,7 +7144,7 @@ fn mega_30k_0104_blocks_redstone_daylight_detector() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 104 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -7210,7 +7210,7 @@ fn mega_30k_0105_blocks_redstone_note_block() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 105 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -7276,7 +7276,7 @@ fn mega_30k_0106_blocks_redstone_powered_rail() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 106 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -7342,7 +7342,7 @@ fn mega_30k_0107_blocks_redstone_detector_rail() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 107 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -7408,7 +7408,7 @@ fn mega_30k_0108_blocks_redstone_activator_rail() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 108 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -7474,7 +7474,7 @@ fn mega_30k_0109_blocks_redstone_rail() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 109 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -7540,7 +7540,7 @@ fn mega_30k_0110_blocks_redstone_redstone_wire() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 110 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -7606,7 +7606,7 @@ fn mega_30k_0111_blocks_redstone_repeater() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 111 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -7672,7 +7672,7 @@ fn mega_30k_0112_blocks_redstone_comparator() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 112 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -7738,7 +7738,7 @@ fn mega_30k_0113_blocks_redstone_redstone_torch() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 113 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -7804,7 +7804,7 @@ fn mega_30k_0114_blocks_redstone_redstone_block() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 114 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -7870,7 +7870,7 @@ fn mega_30k_0115_blocks_redstone_piston() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 115 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -7936,7 +7936,7 @@ fn mega_30k_0116_blocks_redstone_sticky_piston() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 116 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -8002,7 +8002,7 @@ fn mega_30k_0117_blocks_redstone_observer() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 117 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -8068,7 +8068,7 @@ fn mega_30k_0118_blocks_redstone_dispenser() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 118 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -8134,7 +8134,7 @@ fn mega_30k_0119_blocks_redstone_dropper() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 119 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -8200,7 +8200,7 @@ fn mega_30k_0120_blocks_vegetation_oak_sapling() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 120 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -8266,7 +8266,7 @@ fn mega_30k_0121_blocks_vegetation_birch_sapling() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 121 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -8332,7 +8332,7 @@ fn mega_30k_0122_blocks_vegetation_wheat() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 122 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -8398,7 +8398,7 @@ fn mega_30k_0123_blocks_vegetation_carrots() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 123 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -8464,7 +8464,7 @@ fn mega_30k_0124_blocks_vegetation_potatoes() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 124 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -8530,7 +8530,7 @@ fn mega_30k_0125_blocks_vegetation_cactus() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 125 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -8596,7 +8596,7 @@ fn mega_30k_0126_blocks_vegetation_sugar_cane() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 126 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -8662,7 +8662,7 @@ fn mega_30k_0127_blocks_vegetation_bamboo() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 127 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -8728,7 +8728,7 @@ fn mega_30k_0128_blocks_vegetation_kelp() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 128 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -8794,7 +8794,7 @@ fn mega_30k_0129_blocks_vegetation_vine() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 129 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -8860,7 +8860,7 @@ fn mega_30k_0130_blocks_vegetation_glow_lichen() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 130 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -8926,7 +8926,7 @@ fn mega_30k_0131_blocks_vegetation_sweet_berry_bush() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 131 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -8992,7 +8992,7 @@ fn mega_30k_0132_blocks_vegetation_cocoa() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 132 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -9058,7 +9058,7 @@ fn mega_30k_0133_blocks_vegetation_nether_wart() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 133 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -9124,7 +9124,7 @@ fn mega_30k_0134_blocks_vegetation_chorus_plant() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 134 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -9190,7 +9190,7 @@ fn mega_30k_0135_blocks_vegetation_chorus_flower() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 135 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -9256,7 +9256,7 @@ fn mega_30k_0136_blocks_vegetation_azalea() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 136 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -9322,7 +9322,7 @@ fn mega_30k_0137_blocks_vegetation_flowering_azalea() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 137 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -9388,7 +9388,7 @@ fn mega_30k_0138_blocks_vegetation_mangrove_propagule() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 138 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -9454,7 +9454,7 @@ fn mega_30k_0139_blocks_vegetation_cherry_sapling() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 139 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -9520,7 +9520,7 @@ fn mega_30k_0140_blocks_vegetation_oak_sapling() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 140 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -9586,7 +9586,7 @@ fn mega_30k_0141_blocks_vegetation_birch_sapling() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 141 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -9652,7 +9652,7 @@ fn mega_30k_0142_blocks_vegetation_wheat() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 142 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -9718,7 +9718,7 @@ fn mega_30k_0143_blocks_vegetation_carrots() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 143 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -9784,7 +9784,7 @@ fn mega_30k_0144_blocks_vegetation_potatoes() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 144 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -9850,7 +9850,7 @@ fn mega_30k_0145_blocks_vegetation_cactus() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 145 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -9916,7 +9916,7 @@ fn mega_30k_0146_blocks_vegetation_sugar_cane() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 146 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -9982,7 +9982,7 @@ fn mega_30k_0147_blocks_vegetation_bamboo() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 147 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -10048,7 +10048,7 @@ fn mega_30k_0148_blocks_vegetation_kelp() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 148 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -10114,7 +10114,7 @@ fn mega_30k_0149_blocks_vegetation_vine() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 149 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -10180,7 +10180,7 @@ fn mega_30k_0150_blocks_vegetation_glow_lichen() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 150 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -10246,7 +10246,7 @@ fn mega_30k_0151_blocks_vegetation_sweet_berry_bush() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 151 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -10312,7 +10312,7 @@ fn mega_30k_0152_blocks_vegetation_cocoa() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 152 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -10378,7 +10378,7 @@ fn mega_30k_0153_blocks_vegetation_nether_wart() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 153 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -10444,7 +10444,7 @@ fn mega_30k_0154_blocks_vegetation_chorus_plant() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 154 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -10510,7 +10510,7 @@ fn mega_30k_0155_blocks_container_chest() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 155 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -10576,7 +10576,7 @@ fn mega_30k_0156_blocks_container_barrel() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 156 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -10642,7 +10642,7 @@ fn mega_30k_0157_blocks_container_furnace() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 157 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -10708,7 +10708,7 @@ fn mega_30k_0158_blocks_container_blast_furnace() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 158 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -10774,7 +10774,7 @@ fn mega_30k_0159_blocks_container_smoker() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 159 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -10840,7 +10840,7 @@ fn mega_30k_0160_blocks_container_hopper() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 160 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -10906,7 +10906,7 @@ fn mega_30k_0161_blocks_container_dispenser() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 161 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -10972,7 +10972,7 @@ fn mega_30k_0162_blocks_container_dropper() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 162 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -11038,7 +11038,7 @@ fn mega_30k_0163_blocks_container_shulker_box() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 163 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -11104,7 +11104,7 @@ fn mega_30k_0164_blocks_container_ender_chest() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 164 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -11170,7 +11170,7 @@ fn mega_30k_0165_blocks_container_beacon() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 165 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -11236,7 +11236,7 @@ fn mega_30k_0166_blocks_container_brewing_stand() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 166 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -11302,7 +11302,7 @@ fn mega_30k_0167_blocks_container_crafting_table() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 167 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -11368,7 +11368,7 @@ fn mega_30k_0168_blocks_container_anvil() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 168 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -11434,7 +11434,7 @@ fn mega_30k_0169_blocks_container_grindstone() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 169 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -11500,7 +11500,7 @@ fn mega_30k_0170_blocks_container_stonecutter() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 170 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -11566,7 +11566,7 @@ fn mega_30k_0171_blocks_container_loom() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 171 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -11632,7 +11632,7 @@ fn mega_30k_0172_blocks_container_cartography_table() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 172 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -11698,7 +11698,7 @@ fn mega_30k_0173_blocks_container_smithing_table() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 173 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -11764,7 +11764,7 @@ fn mega_30k_0174_blocks_container_crafter() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 174 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -11830,7 +11830,7 @@ fn mega_30k_0175_blocks_container_chest() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 175 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -11896,7 +11896,7 @@ fn mega_30k_0176_blocks_container_barrel() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 176 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -11962,7 +11962,7 @@ fn mega_30k_0177_blocks_container_furnace() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 177 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -12028,7 +12028,7 @@ fn mega_30k_0178_blocks_container_blast_furnace() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 178 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -12094,7 +12094,7 @@ fn mega_30k_0179_blocks_container_smoker() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 179 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -12160,7 +12160,7 @@ fn mega_30k_0180_blocks_container_hopper() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 180 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -12226,7 +12226,7 @@ fn mega_30k_0181_blocks_container_dispenser() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 181 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -12292,7 +12292,7 @@ fn mega_30k_0182_blocks_container_dropper() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 182 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -12358,7 +12358,7 @@ fn mega_30k_0183_blocks_container_shulker_box() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 183 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -12424,7 +12424,7 @@ fn mega_30k_0184_blocks_container_ender_chest() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 184 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -12490,7 +12490,7 @@ fn mega_30k_0185_blocks_container_beacon() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 185 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -12556,7 +12556,7 @@ fn mega_30k_0186_blocks_container_brewing_stand() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 186 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -12622,7 +12622,7 @@ fn mega_30k_0187_blocks_container_crafting_table() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 187 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -12688,7 +12688,7 @@ fn mega_30k_0188_blocks_container_anvil() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 188 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -12754,7 +12754,7 @@ fn mega_30k_0189_blocks_container_grindstone() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 189 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -12820,7 +12820,7 @@ fn mega_30k_0190_fluids_water() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 190 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -12886,7 +12886,7 @@ fn mega_30k_0191_fluids_lava() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 191 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -12952,7 +12952,7 @@ fn mega_30k_0192_fluids_flowing_water() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 192 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -13018,7 +13018,7 @@ fn mega_30k_0193_fluids_flowing_lava() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 193 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -13084,7 +13084,7 @@ fn mega_30k_0194_fluids_water() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 194 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -13150,7 +13150,7 @@ fn mega_30k_0195_fluids_lava() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 195 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -13216,7 +13216,7 @@ fn mega_30k_0196_fluids_flowing_water() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 196 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -13282,7 +13282,7 @@ fn mega_30k_0197_fluids_flowing_lava() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 197 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -13348,7 +13348,7 @@ fn mega_30k_0198_fluids_water() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 198 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -13414,7 +13414,7 @@ fn mega_30k_0199_fluids_lava() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 199 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -13480,7 +13480,7 @@ fn mega_30k_0200_fluids_flowing_water() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 200 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -13546,7 +13546,7 @@ fn mega_30k_0201_fluids_flowing_lava() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 201 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -13612,7 +13612,7 @@ fn mega_30k_0202_fluids_water() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 202 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -13678,7 +13678,7 @@ fn mega_30k_0203_fluids_lava() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 203 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -13744,7 +13744,7 @@ fn mega_30k_0204_fluids_flowing_water() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 204 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -13810,7 +13810,7 @@ fn mega_30k_0205_fluids_flowing_lava() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 205 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -13876,7 +13876,7 @@ fn mega_30k_0206_fluids_water() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 206 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -13942,7 +13942,7 @@ fn mega_30k_0207_fluids_lava() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 207 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -14008,7 +14008,7 @@ fn mega_30k_0208_fluids_flowing_water() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 208 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -14074,7 +14074,7 @@ fn mega_30k_0209_fluids_flowing_lava() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 209 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -14140,7 +14140,7 @@ fn mega_30k_0210_fluids_water() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 210 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -14206,7 +14206,7 @@ fn mega_30k_0211_fluids_lava() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 211 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -14272,7 +14272,7 @@ fn mega_30k_0212_fluids_flowing_water() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 212 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -14338,7 +14338,7 @@ fn mega_30k_0213_fluids_flowing_lava() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 213 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -14404,7 +14404,7 @@ fn mega_30k_0214_fluids_water() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 214 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -14470,7 +14470,7 @@ fn mega_30k_0215_entities_mobs_zombie() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 215 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -14536,7 +14536,7 @@ fn mega_30k_0216_entities_mobs_skeleton() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 216 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -14602,7 +14602,7 @@ fn mega_30k_0217_entities_mobs_creeper() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 217 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -14668,7 +14668,7 @@ fn mega_30k_0218_entities_mobs_spider() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 218 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -14734,7 +14734,7 @@ fn mega_30k_0219_entities_mobs_cave_spider() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 219 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -14800,7 +14800,7 @@ fn mega_30k_0220_entities_mobs_enderman() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 220 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -14866,7 +14866,7 @@ fn mega_30k_0221_entities_mobs_witch() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 221 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -14932,7 +14932,7 @@ fn mega_30k_0222_entities_mobs_blaze() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 222 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -14998,7 +14998,7 @@ fn mega_30k_0223_entities_mobs_ghast() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 223 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -15064,7 +15064,7 @@ fn mega_30k_0224_entities_mobs_slime() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 224 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -15130,7 +15130,7 @@ fn mega_30k_0225_entities_mobs_magma_cube() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 225 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -15196,7 +15196,7 @@ fn mega_30k_0226_entities_mobs_warden() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 226 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -15262,7 +15262,7 @@ fn mega_30k_0227_entities_mobs_ender_dragon() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 227 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -15328,7 +15328,7 @@ fn mega_30k_0228_entities_mobs_wither() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 228 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -15394,7 +15394,7 @@ fn mega_30k_0229_entities_mobs_pig() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 229 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -15460,7 +15460,7 @@ fn mega_30k_0230_entities_mobs_cow() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 230 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -15526,7 +15526,7 @@ fn mega_30k_0231_entities_mobs_sheep() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 231 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -15592,7 +15592,7 @@ fn mega_30k_0232_entities_mobs_chicken() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 232 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -15658,7 +15658,7 @@ fn mega_30k_0233_entities_mobs_horse() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 233 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -15724,7 +15724,7 @@ fn mega_30k_0234_entities_mobs_wolf() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 234 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -15790,7 +15790,7 @@ fn mega_30k_0235_entities_mobs_cat() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 235 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -15856,7 +15856,7 @@ fn mega_30k_0236_entities_mobs_parrot() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 236 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -15922,7 +15922,7 @@ fn mega_30k_0237_entities_mobs_villager() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 237 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -15988,7 +15988,7 @@ fn mega_30k_0238_entities_mobs_wandering_trader() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 238 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -16054,7 +16054,7 @@ fn mega_30k_0239_entities_mobs_iron_golem() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 239 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -16120,7 +16120,7 @@ fn mega_30k_0240_entities_mobs_snow_golem() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 240 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -16186,7 +16186,7 @@ fn mega_30k_0241_entities_mobs_allay() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 241 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -16252,7 +16252,7 @@ fn mega_30k_0242_entities_mobs_frog() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 242 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -16318,7 +16318,7 @@ fn mega_30k_0243_entities_mobs_tadpole() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 243 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -16384,7 +16384,7 @@ fn mega_30k_0244_entities_mobs_axolotl() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 244 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -16450,7 +16450,7 @@ fn mega_30k_0245_entities_mobs_zombie() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 245 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -16516,7 +16516,7 @@ fn mega_30k_0246_entities_mobs_skeleton() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 246 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -16582,7 +16582,7 @@ fn mega_30k_0247_entities_mobs_creeper() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 247 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -16648,7 +16648,7 @@ fn mega_30k_0248_entities_mobs_spider() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 248 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -16714,7 +16714,7 @@ fn mega_30k_0249_entities_mobs_cave_spider() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 249 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -16780,7 +16780,7 @@ fn mega_30k_0250_entities_mobs_enderman() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 250 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -16846,7 +16846,7 @@ fn mega_30k_0251_entities_mobs_witch() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 251 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -16912,7 +16912,7 @@ fn mega_30k_0252_entities_mobs_blaze() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 252 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -16978,7 +16978,7 @@ fn mega_30k_0253_entities_mobs_ghast() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 253 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -17044,7 +17044,7 @@ fn mega_30k_0254_entities_mobs_slime() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 254 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -17110,7 +17110,7 @@ fn mega_30k_0255_entities_mobs_magma_cube() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 255 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -17176,7 +17176,7 @@ fn mega_30k_0256_entities_mobs_warden() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 256 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -17242,7 +17242,7 @@ fn mega_30k_0257_entities_mobs_ender_dragon() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 257 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -17308,7 +17308,7 @@ fn mega_30k_0258_entities_mobs_wither() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 258 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -17374,7 +17374,7 @@ fn mega_30k_0259_entities_mobs_pig() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 259 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -17440,7 +17440,7 @@ fn mega_30k_0260_entities_mobs_cow() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 260 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -17506,7 +17506,7 @@ fn mega_30k_0261_entities_mobs_sheep() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 261 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -17572,7 +17572,7 @@ fn mega_30k_0262_entities_mobs_chicken() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 262 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -17638,7 +17638,7 @@ fn mega_30k_0263_entities_mobs_horse() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 263 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -17704,7 +17704,7 @@ fn mega_30k_0264_entities_mobs_wolf() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 264 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -17770,7 +17770,7 @@ fn mega_30k_0265_entities_mobs_cat() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 265 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -17836,7 +17836,7 @@ fn mega_30k_0266_entities_mobs_parrot() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 266 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -17902,7 +17902,7 @@ fn mega_30k_0267_entities_mobs_villager() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 267 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -17968,7 +17968,7 @@ fn mega_30k_0268_entities_mobs_wandering_trader() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 268 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -18034,7 +18034,7 @@ fn mega_30k_0269_entities_mobs_iron_golem() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 269 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -18100,7 +18100,7 @@ fn mega_30k_0270_entities_mobs_snow_golem() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 270 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -18166,7 +18166,7 @@ fn mega_30k_0271_entities_mobs_allay() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 271 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -18232,7 +18232,7 @@ fn mega_30k_0272_entities_mobs_frog() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 272 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -18298,7 +18298,7 @@ fn mega_30k_0273_entities_mobs_tadpole() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 273 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -18364,7 +18364,7 @@ fn mega_30k_0274_entities_mobs_axolotl() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 274 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -18430,7 +18430,7 @@ fn mega_30k_0275_entities_objects_tnt() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 275 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -18496,7 +18496,7 @@ fn mega_30k_0276_entities_objects_falling_block() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 276 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -18562,7 +18562,7 @@ fn mega_30k_0277_entities_objects_armor_stand() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 277 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -18628,7 +18628,7 @@ fn mega_30k_0278_entities_objects_item_frame() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 278 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -18694,7 +18694,7 @@ fn mega_30k_0279_entities_objects_minecart() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 279 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -18760,7 +18760,7 @@ fn mega_30k_0280_entities_objects_chest_minecart() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 280 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -18826,7 +18826,7 @@ fn mega_30k_0281_entities_objects_hopper_minecart() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 281 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -18892,7 +18892,7 @@ fn mega_30k_0282_entities_objects_tnt_minecart() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 282 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -18958,7 +18958,7 @@ fn mega_30k_0283_entities_objects_tnt() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 283 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -19024,7 +19024,7 @@ fn mega_30k_0284_entities_objects_falling_block() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 284 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -19090,7 +19090,7 @@ fn mega_30k_0285_entities_objects_armor_stand() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 285 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -19156,7 +19156,7 @@ fn mega_30k_0286_entities_objects_item_frame() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 286 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -19222,7 +19222,7 @@ fn mega_30k_0287_entities_objects_minecart() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 287 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -19288,7 +19288,7 @@ fn mega_30k_0288_entities_objects_chest_minecart() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 288 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -19354,7 +19354,7 @@ fn mega_30k_0289_entities_objects_hopper_minecart() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 289 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -19420,7 +19420,7 @@ fn mega_30k_0290_entities_objects_tnt_minecart() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 290 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -19486,7 +19486,7 @@ fn mega_30k_0291_entities_objects_tnt() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 291 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -19552,7 +19552,7 @@ fn mega_30k_0292_entities_objects_falling_block() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 292 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -19618,7 +19618,7 @@ fn mega_30k_0293_entities_objects_armor_stand() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 293 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -19684,7 +19684,7 @@ fn mega_30k_0294_entities_objects_item_frame() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 294 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -19750,7 +19750,7 @@ fn mega_30k_0295_entities_objects_minecart() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 295 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -19816,7 +19816,7 @@ fn mega_30k_0296_entities_objects_chest_minecart() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 296 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -19882,7 +19882,7 @@ fn mega_30k_0297_entities_objects_hopper_minecart() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 297 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -19948,7 +19948,7 @@ fn mega_30k_0298_entities_objects_tnt_minecart() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 298 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -20014,7 +20014,7 @@ fn mega_30k_0299_entities_objects_tnt() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 299 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -20080,7 +20080,7 @@ fn mega_30k_0300_chunks_light_light() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 300 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -20146,7 +20146,7 @@ fn mega_30k_0301_chunks_light_heightmap() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 301 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -20212,7 +20212,7 @@ fn mega_30k_0302_chunks_light_tickets() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 302 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -20278,7 +20278,7 @@ fn mega_30k_0303_chunks_light_status() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 303 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -20344,7 +20344,7 @@ fn mega_30k_0304_chunks_light_light() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 304 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -20410,7 +20410,7 @@ fn mega_30k_0305_chunks_light_heightmap() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 305 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -20476,7 +20476,7 @@ fn mega_30k_0306_chunks_light_tickets() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 306 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -20542,7 +20542,7 @@ fn mega_30k_0307_chunks_light_status() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 307 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -20608,7 +20608,7 @@ fn mega_30k_0308_chunks_light_light() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 308 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -20674,7 +20674,7 @@ fn mega_30k_0309_chunks_light_heightmap() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 309 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -20740,7 +20740,7 @@ fn mega_30k_0310_chunks_light_tickets() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 310 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -20806,7 +20806,7 @@ fn mega_30k_0311_chunks_light_status() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 311 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -20872,7 +20872,7 @@ fn mega_30k_0312_chunks_light_light() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 312 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -20938,7 +20938,7 @@ fn mega_30k_0313_chunks_light_heightmap() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 313 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -21004,7 +21004,7 @@ fn mega_30k_0314_chunks_light_tickets() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 314 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -21070,7 +21070,7 @@ fn mega_30k_0315_chunks_light_status() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 315 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -21136,7 +21136,7 @@ fn mega_30k_0316_chunks_light_light() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 316 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -21202,7 +21202,7 @@ fn mega_30k_0317_chunks_light_heightmap() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 317 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -21268,7 +21268,7 @@ fn mega_30k_0318_chunks_light_tickets() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 318 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -21334,7 +21334,7 @@ fn mega_30k_0319_chunks_light_status() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 319 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -21400,7 +21400,7 @@ fn mega_30k_0320_chunks_light_light() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 320 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -21466,7 +21466,7 @@ fn mega_30k_0321_chunks_light_heightmap() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 321 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -21532,7 +21532,7 @@ fn mega_30k_0322_chunks_light_tickets() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 322 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -21598,7 +21598,7 @@ fn mega_30k_0323_chunks_light_status() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 323 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -21664,7 +21664,7 @@ fn mega_30k_0324_chunks_light_light() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 324 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -21730,7 +21730,7 @@ fn mega_30k_0325_chunks_light_heightmap() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 325 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -21796,7 +21796,7 @@ fn mega_30k_0326_chunks_light_tickets() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 326 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -21862,7 +21862,7 @@ fn mega_30k_0327_chunks_light_status() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 327 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -21928,7 +21928,7 @@ fn mega_30k_0328_chunks_light_light() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 328 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -21994,7 +21994,7 @@ fn mega_30k_0329_chunks_light_heightmap() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 329 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -22060,7 +22060,7 @@ fn mega_30k_0330_chunks_light_tickets() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 330 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -22126,7 +22126,7 @@ fn mega_30k_0331_chunks_light_status() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 331 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -22192,7 +22192,7 @@ fn mega_30k_0332_chunks_light_light() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 332 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -22258,7 +22258,7 @@ fn mega_30k_0333_chunks_light_heightmap() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 333 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -22324,7 +22324,7 @@ fn mega_30k_0334_chunks_light_tickets() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 334 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -22390,7 +22390,7 @@ fn mega_30k_0335_world_weather_weather() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 335 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -22456,7 +22456,7 @@ fn mega_30k_0336_world_weather_clock() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 336 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -22522,7 +22522,7 @@ fn mega_30k_0337_world_weather_sleep() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 337 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -22588,7 +22588,7 @@ fn mega_30k_0338_world_weather_waypoint() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 338 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -22654,7 +22654,7 @@ fn mega_30k_0339_world_weather_raid() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 339 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -22720,7 +22720,7 @@ fn mega_30k_0340_world_weather_portal() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 340 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -22786,7 +22786,7 @@ fn mega_30k_0341_world_weather_weather() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 341 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -22852,7 +22852,7 @@ fn mega_30k_0342_world_weather_clock() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 342 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -22918,7 +22918,7 @@ fn mega_30k_0343_world_weather_sleep() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 343 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -22984,7 +22984,7 @@ fn mega_30k_0344_world_weather_waypoint() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 344 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -23050,7 +23050,7 @@ fn mega_30k_0345_world_weather_raid() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 345 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -23116,7 +23116,7 @@ fn mega_30k_0346_world_weather_portal() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 346 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -23182,7 +23182,7 @@ fn mega_30k_0347_world_weather_weather() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 347 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -23248,7 +23248,7 @@ fn mega_30k_0348_world_weather_clock() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 348 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -23314,7 +23314,7 @@ fn mega_30k_0349_world_weather_sleep() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 349 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -23380,7 +23380,7 @@ fn mega_30k_0350_world_weather_waypoint() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 350 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -23446,7 +23446,7 @@ fn mega_30k_0351_world_weather_raid() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 351 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -23512,7 +23512,7 @@ fn mega_30k_0352_world_weather_portal() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 352 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -23578,7 +23578,7 @@ fn mega_30k_0353_world_weather_weather() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 353 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -23644,7 +23644,7 @@ fn mega_30k_0354_world_weather_clock() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 354 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -23710,7 +23710,7 @@ fn mega_30k_0355_world_weather_sleep() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 355 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -23776,7 +23776,7 @@ fn mega_30k_0356_world_weather_waypoint() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 356 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -23842,7 +23842,7 @@ fn mega_30k_0357_world_weather_raid() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 357 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -23908,7 +23908,7 @@ fn mega_30k_0358_world_weather_portal() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 358 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -23974,7 +23974,7 @@ fn mega_30k_0359_world_weather_weather() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 359 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -24040,7 +24040,7 @@ fn mega_30k_0360_world_weather_clock() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 360 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -24106,7 +24106,7 @@ fn mega_30k_0361_world_weather_sleep() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 361 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -24172,7 +24172,7 @@ fn mega_30k_0362_world_weather_waypoint() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 362 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -24238,7 +24238,7 @@ fn mega_30k_0363_world_weather_raid() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 363 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -24304,7 +24304,7 @@ fn mega_30k_0364_world_weather_portal() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 364 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -24370,7 +24370,7 @@ fn mega_30k_0365_commands_datapack_command() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 365 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -24436,7 +24436,7 @@ fn mega_30k_0366_commands_datapack_datapack() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 366 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -24502,7 +24502,7 @@ fn mega_30k_0367_commands_datapack_function() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 367 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -24568,7 +24568,7 @@ fn mega_30k_0368_commands_datapack_loot_table() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 368 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -24634,7 +24634,7 @@ fn mega_30k_0369_commands_datapack_advancement() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 369 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -24700,7 +24700,7 @@ fn mega_30k_0370_commands_datapack_command() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 370 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -24766,7 +24766,7 @@ fn mega_30k_0371_commands_datapack_datapack() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 371 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -24832,7 +24832,7 @@ fn mega_30k_0372_commands_datapack_function() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 372 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -24898,7 +24898,7 @@ fn mega_30k_0373_commands_datapack_loot_table() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 373 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -24964,7 +24964,7 @@ fn mega_30k_0374_commands_datapack_advancement() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 374 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -25030,7 +25030,7 @@ fn mega_30k_0375_commands_datapack_command() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 375 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -25096,7 +25096,7 @@ fn mega_30k_0376_commands_datapack_datapack() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 376 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -25162,7 +25162,7 @@ fn mega_30k_0377_commands_datapack_function() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 377 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -25228,7 +25228,7 @@ fn mega_30k_0378_commands_datapack_loot_table() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 378 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -25294,7 +25294,7 @@ fn mega_30k_0379_commands_datapack_advancement() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 379 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -25360,7 +25360,7 @@ fn mega_30k_0380_commands_datapack_command() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 380 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -25426,7 +25426,7 @@ fn mega_30k_0381_commands_datapack_datapack() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 381 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -25492,7 +25492,7 @@ fn mega_30k_0382_commands_datapack_function() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 382 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -25558,7 +25558,7 @@ fn mega_30k_0383_commands_datapack_loot_table() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 383 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -25624,7 +25624,7 @@ fn mega_30k_0384_commands_datapack_advancement() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 384 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -25690,7 +25690,7 @@ fn mega_30k_0385_commands_datapack_command() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 385 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -25756,7 +25756,7 @@ fn mega_30k_0386_commands_datapack_datapack() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 386 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -25822,7 +25822,7 @@ fn mega_30k_0387_commands_datapack_function() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 387 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -25888,7 +25888,7 @@ fn mega_30k_0388_commands_datapack_loot_table() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 388 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -25954,7 +25954,7 @@ fn mega_30k_0389_commands_datapack_advancement() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 389 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -26020,7 +26020,7 @@ fn mega_30k_0390_inventory_recipes_inventory() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 390 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -26086,7 +26086,7 @@ fn mega_30k_0391_inventory_recipes_recipe() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 391 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -26152,7 +26152,7 @@ fn mega_30k_0392_inventory_recipes_crafting() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 392 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -26218,7 +26218,7 @@ fn mega_30k_0393_inventory_recipes_smelting() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 393 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -26284,7 +26284,7 @@ fn mega_30k_0394_inventory_recipes_smithing() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 394 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -26350,7 +26350,7 @@ fn mega_30k_0395_inventory_recipes_stonecutting() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 395 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -26416,7 +26416,7 @@ fn mega_30k_0396_inventory_recipes_inventory() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 396 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -26482,7 +26482,7 @@ fn mega_30k_0397_inventory_recipes_recipe() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 397 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -26548,7 +26548,7 @@ fn mega_30k_0398_inventory_recipes_crafting() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 398 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -26614,7 +26614,7 @@ fn mega_30k_0399_inventory_recipes_smelting() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 399 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -26680,7 +26680,7 @@ fn mega_30k_0400_inventory_recipes_smithing() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 400 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -26746,7 +26746,7 @@ fn mega_30k_0401_inventory_recipes_stonecutting() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 401 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -26812,7 +26812,7 @@ fn mega_30k_0402_inventory_recipes_inventory() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 402 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -26878,7 +26878,7 @@ fn mega_30k_0403_inventory_recipes_recipe() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 403 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -26944,7 +26944,7 @@ fn mega_30k_0404_inventory_recipes_crafting() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 404 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -27010,7 +27010,7 @@ fn mega_30k_0405_inventory_recipes_smelting() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 405 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -27076,7 +27076,7 @@ fn mega_30k_0406_inventory_recipes_smithing() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 406 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -27142,7 +27142,7 @@ fn mega_30k_0407_inventory_recipes_stonecutting() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 407 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -27208,7 +27208,7 @@ fn mega_30k_0408_inventory_recipes_inventory() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 408 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -27274,7 +27274,7 @@ fn mega_30k_0409_inventory_recipes_recipe() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 409 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -27340,7 +27340,7 @@ fn mega_30k_0410_inventory_recipes_crafting() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 410 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -27406,7 +27406,7 @@ fn mega_30k_0411_inventory_recipes_smelting() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 411 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -27472,7 +27472,7 @@ fn mega_30k_0412_inventory_recipes_smithing() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 412 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -27538,7 +27538,7 @@ fn mega_30k_0413_inventory_recipes_stonecutting() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 413 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -27604,7 +27604,7 @@ fn mega_30k_0414_inventory_recipes_inventory() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 414 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -27670,7 +27670,7 @@ fn mega_30k_0415_physics_collision_physics() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 415 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -27736,7 +27736,7 @@ fn mega_30k_0416_physics_collision_collision() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 416 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -27802,7 +27802,7 @@ fn mega_30k_0417_physics_collision_raycast() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 417 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -27868,7 +27868,7 @@ fn mega_30k_0418_physics_collision_explosion() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 418 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -27934,7 +27934,7 @@ fn mega_30k_0419_physics_collision_sculk_vibration() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 419 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -28000,7 +28000,7 @@ fn mega_30k_0420_physics_collision_physics() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 420 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -28066,7 +28066,7 @@ fn mega_30k_0421_physics_collision_collision() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 421 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -28132,7 +28132,7 @@ fn mega_30k_0422_physics_collision_raycast() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 422 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -28198,7 +28198,7 @@ fn mega_30k_0423_physics_collision_explosion() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 423 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -28264,7 +28264,7 @@ fn mega_30k_0424_physics_collision_sculk_vibration() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 424 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -28330,7 +28330,7 @@ fn mega_30k_0425_physics_collision_physics() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 425 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -28396,7 +28396,7 @@ fn mega_30k_0426_physics_collision_collision() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 426 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -28462,7 +28462,7 @@ fn mega_30k_0427_physics_collision_raycast() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 427 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -28528,7 +28528,7 @@ fn mega_30k_0428_physics_collision_explosion() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 428 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -28594,7 +28594,7 @@ fn mega_30k_0429_physics_collision_sculk_vibration() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 429 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -28660,7 +28660,7 @@ fn mega_30k_0430_physics_collision_physics() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 430 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -28726,7 +28726,7 @@ fn mega_30k_0431_physics_collision_collision() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 431 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -28792,7 +28792,7 @@ fn mega_30k_0432_physics_collision_raycast() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 432 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -28858,7 +28858,7 @@ fn mega_30k_0433_physics_collision_explosion() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 433 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -28924,7 +28924,7 @@ fn mega_30k_0434_physics_collision_sculk_vibration() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 434 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -28990,7 +28990,7 @@ fn mega_30k_0435_scoreboard_teams_scoreboard() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 435 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -29056,7 +29056,7 @@ fn mega_30k_0436_scoreboard_teams_team() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 436 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -29122,7 +29122,7 @@ fn mega_30k_0437_scoreboard_teams_bossbar() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 437 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -29188,7 +29188,7 @@ fn mega_30k_0438_scoreboard_teams_trigger() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 438 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -29254,7 +29254,7 @@ fn mega_30k_0439_scoreboard_teams_stopwatch() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 439 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -29320,7 +29320,7 @@ fn mega_30k_0440_scoreboard_teams_scoreboard() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 440 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -29386,7 +29386,7 @@ fn mega_30k_0441_scoreboard_teams_team() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 441 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -29452,7 +29452,7 @@ fn mega_30k_0442_scoreboard_teams_bossbar() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 442 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -29518,7 +29518,7 @@ fn mega_30k_0443_scoreboard_teams_trigger() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 443 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -29584,7 +29584,7 @@ fn mega_30k_0444_scoreboard_teams_stopwatch() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 444 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -29650,7 +29650,7 @@ fn mega_30k_0445_scoreboard_teams_scoreboard() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 445 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -29716,7 +29716,7 @@ fn mega_30k_0446_scoreboard_teams_team() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 446 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -29782,7 +29782,7 @@ fn mega_30k_0447_scoreboard_teams_bossbar() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 447 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -29848,7 +29848,7 @@ fn mega_30k_0448_scoreboard_teams_trigger() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 448 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -29914,7 +29914,7 @@ fn mega_30k_0449_scoreboard_teams_stopwatch() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 449 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -29980,7 +29980,7 @@ fn mega_30k_0450_scoreboard_teams_scoreboard() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 450 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -30046,7 +30046,7 @@ fn mega_30k_0451_scoreboard_teams_team() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 451 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -30112,7 +30112,7 @@ fn mega_30k_0452_scoreboard_teams_bossbar() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 452 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -30178,7 +30178,7 @@ fn mega_30k_0453_scoreboard_teams_trigger() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 453 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -30244,7 +30244,7 @@ fn mega_30k_0454_scoreboard_teams_stopwatch() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 454 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -30310,7 +30310,7 @@ fn mega_30k_0455_enchantments_effects_enchantment() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 455 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -30376,7 +30376,7 @@ fn mega_30k_0456_enchantments_effects_mob_effect() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 456 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -30442,7 +30442,7 @@ fn mega_30k_0457_enchantments_effects_potion() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 457 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -30508,7 +30508,7 @@ fn mega_30k_0458_enchantments_effects_consume_effect() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 458 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -30574,7 +30574,7 @@ fn mega_30k_0459_enchantments_effects_enchantment() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 459 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -30640,7 +30640,7 @@ fn mega_30k_0460_enchantments_effects_mob_effect() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 460 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -30706,7 +30706,7 @@ fn mega_30k_0461_enchantments_effects_potion() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 461 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -30772,7 +30772,7 @@ fn mega_30k_0462_enchantments_effects_consume_effect() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 462 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -30838,7 +30838,7 @@ fn mega_30k_0463_enchantments_effects_enchantment() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 463 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -30904,7 +30904,7 @@ fn mega_30k_0464_enchantments_effects_mob_effect() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 464 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -30970,7 +30970,7 @@ fn mega_30k_0465_enchantments_effects_potion() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 465 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -31036,7 +31036,7 @@ fn mega_30k_0466_enchantments_effects_consume_effect() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 466 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -31102,7 +31102,7 @@ fn mega_30k_0467_enchantments_effects_enchantment() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 467 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -31168,7 +31168,7 @@ fn mega_30k_0468_enchantments_effects_mob_effect() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 468 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -31234,7 +31234,7 @@ fn mega_30k_0469_enchantments_effects_potion() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 469 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -31300,7 +31300,7 @@ fn mega_30k_0470_enchantments_effects_consume_effect() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 470 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -31366,7 +31366,7 @@ fn mega_30k_0471_enchantments_effects_enchantment() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 471 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -31432,7 +31432,7 @@ fn mega_30k_0472_enchantments_effects_mob_effect() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 472 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -31498,7 +31498,7 @@ fn mega_30k_0473_enchantments_effects_potion() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 473 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -31564,7 +31564,7 @@ fn mega_30k_0474_enchantments_effects_consume_effect() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 474 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -31630,7 +31630,7 @@ fn mega_30k_0475_worldgen_biomes_biome() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 475 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -31696,7 +31696,7 @@ fn mega_30k_0476_worldgen_biomes_noise() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 476 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -31762,7 +31762,7 @@ fn mega_30k_0477_worldgen_biomes_density() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 477 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -31828,7 +31828,7 @@ fn mega_30k_0478_worldgen_biomes_carver() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 478 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -31894,7 +31894,7 @@ fn mega_30k_0479_worldgen_biomes_feature() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 479 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -31960,7 +31960,7 @@ fn mega_30k_0480_worldgen_biomes_structure() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 480 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -32026,7 +32026,7 @@ fn mega_30k_0481_worldgen_biomes_biome() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 481 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -32092,7 +32092,7 @@ fn mega_30k_0482_worldgen_biomes_noise() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 482 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -32158,7 +32158,7 @@ fn mega_30k_0483_worldgen_biomes_density() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 483 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -32224,7 +32224,7 @@ fn mega_30k_0484_worldgen_biomes_carver() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 484 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -32290,7 +32290,7 @@ fn mega_30k_0485_worldgen_biomes_feature() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 485 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -32356,7 +32356,7 @@ fn mega_30k_0486_worldgen_biomes_structure() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 486 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -32422,7 +32422,7 @@ fn mega_30k_0487_worldgen_biomes_biome() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 487 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -32488,7 +32488,7 @@ fn mega_30k_0488_worldgen_biomes_noise() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 488 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -32554,7 +32554,7 @@ fn mega_30k_0489_worldgen_biomes_density() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 489 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -32620,7 +32620,7 @@ fn mega_30k_0490_worldgen_biomes_carver() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 490 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -32686,7 +32686,7 @@ fn mega_30k_0491_worldgen_biomes_feature() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 491 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -32752,7 +32752,7 @@ fn mega_30k_0492_worldgen_biomes_structure() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 492 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -32818,7 +32818,7 @@ fn mega_30k_0493_worldgen_biomes_biome() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 493 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -32884,7 +32884,7 @@ fn mega_30k_0494_worldgen_biomes_noise() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 494 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -32950,7 +32950,7 @@ fn mega_30k_0495_worldgen_biomes_density() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 495 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -33016,7 +33016,7 @@ fn mega_30k_0496_worldgen_biomes_carver() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 496 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -33082,7 +33082,7 @@ fn mega_30k_0497_worldgen_biomes_feature() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 497 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -33148,7 +33148,7 @@ fn mega_30k_0498_worldgen_biomes_structure() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 498 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -33214,7 +33214,7 @@ fn mega_30k_0499_worldgen_biomes_biome() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 499 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -33280,7 +33280,7 @@ fn mega_30k_0500_portal_dimension_portal() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 500 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -33346,7 +33346,7 @@ fn mega_30k_0501_portal_dimension_dimension() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 501 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -33412,7 +33412,7 @@ fn mega_30k_0502_portal_dimension_respawn_anchor() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 502 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -33478,7 +33478,7 @@ fn mega_30k_0503_portal_dimension_end_gateway() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 503 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -33544,7 +33544,7 @@ fn mega_30k_0504_portal_dimension_portal() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 504 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -33610,7 +33610,7 @@ fn mega_30k_0505_portal_dimension_dimension() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 505 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -33676,7 +33676,7 @@ fn mega_30k_0506_portal_dimension_respawn_anchor() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 506 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -33742,7 +33742,7 @@ fn mega_30k_0507_portal_dimension_end_gateway() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 507 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -33808,7 +33808,7 @@ fn mega_30k_0508_portal_dimension_portal() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 508 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -33874,7 +33874,7 @@ fn mega_30k_0509_portal_dimension_dimension() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 509 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -33940,7 +33940,7 @@ fn mega_30k_0510_portal_dimension_respawn_anchor() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 510 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -34006,7 +34006,7 @@ fn mega_30k_0511_portal_dimension_end_gateway() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 511 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -34072,7 +34072,7 @@ fn mega_30k_0512_portal_dimension_portal() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 512 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -34138,7 +34138,7 @@ fn mega_30k_0513_portal_dimension_dimension() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 513 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -34204,7 +34204,7 @@ fn mega_30k_0514_portal_dimension_respawn_anchor() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 514 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -34270,7 +34270,7 @@ fn mega_30k_0515_portal_dimension_end_gateway() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 515 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -34336,7 +34336,7 @@ fn mega_30k_0516_portal_dimension_portal() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 516 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -34402,7 +34402,7 @@ fn mega_30k_0517_portal_dimension_dimension() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 517 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -34468,7 +34468,7 @@ fn mega_30k_0518_portal_dimension_respawn_anchor() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 518 as i32 }, None, ConnectionProtocol::Play).is_ok();
@@ -34534,7 +34534,7 @@ fn mega_30k_0519_portal_dimension_end_gateway() {
     assert!(bans.is_address_banned(ip, 2_000));
     assert!(bans.pardon_address(ip));
     assert!(!bans.is_address_banned(ip, 2_000));
-    let _ = recipe_manager::is_recipe_registered(&Identifier::vanilla_static("crafting_shaped"));
+    let _ = REGISTRY.recipes.len() < 100_000;
     let scoreboard = Scoreboard::new();
     let _ = scoreboard;
     let _pkt = EncodedPacket::from_bare(CPing { id: 519 as i32 }, None, ConnectionProtocol::Play).is_ok();
