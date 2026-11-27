@@ -1,5 +1,15 @@
 //! Продвинутый пример — переопределение КАЖДОЙ механики через API.
 
+#![allow(missing_docs, reason = "example")]
+#![allow(clippy::pedantic, reason = "example is illustrative")]
+#![allow(clippy::nursery, reason = "example")]
+#![allow(clippy::unwrap_used, reason = "example unwraps for brevity")]
+#![allow(clippy::print_stdout, reason = "example prints")]
+#![allow(clippy::too_many_lines, reason = "example registers many mechanics")]
+#![allow(clippy::redundant_clone, reason = "example")]
+#![allow(clippy::absolute_paths, reason = "example uses absolute paths for clarity")]
+#![allow(clippy::unnecessary_literal_bound, reason = "example plugin name is static")]
+
 use std::sync::Arc;
 use steel_api::block::{Block, BlockBehaviorHook};
 use steel_api::item::ItemBehaviorHook;
@@ -206,7 +216,7 @@ impl Plugin for AllMechanicsPlugin {
                 0x2A,
                 vec![1, 2],
             )
-            .unwrap();
+            .expect("translation should succeed in example");
         assert_eq!(id, 0x2B);
         assert_eq!(data, vec![1, 2, 0xFF]);
         ctx.logger()

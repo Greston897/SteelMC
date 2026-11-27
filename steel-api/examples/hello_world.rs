@@ -1,6 +1,13 @@
 //! Минимальный плагин — аналог `JavaPlugin` из Bukkit, но в Rust.
 //! Демонстрирует: жизненный цикл, события, команды, права, ViaVersion хук.
 
+#![allow(missing_docs, reason = "example")]
+#![allow(clippy::pedantic, reason = "example")]
+#![allow(clippy::nursery, reason = "example")]
+#![allow(clippy::unwrap_used, reason = "example")]
+#![allow(clippy::print_stdout, reason = "example")]
+#![allow(clippy::absolute_paths, reason = "example")]
+
 use std::sync::Arc;
 use steel_api::permission::{Permission, PermissionDefault};
 use steel_api::plugin::{Plugin, PluginContext, PluginResult};

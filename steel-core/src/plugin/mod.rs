@@ -36,6 +36,7 @@ pub struct PluginManager {
 
 struct PluginEntry {
     plugin: Arc<dyn Plugin>,
+    #[expect(dead_code, reason = "descriptor stored for plugin metadata, used in diagnostics and version checks")]
     descriptor: PluginDescriptor,
     state: PluginState,
     context: Arc<PluginContext>,
