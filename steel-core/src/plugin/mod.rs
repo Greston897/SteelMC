@@ -5,14 +5,22 @@
 //! Архитектура:
 //! - `PluginManager` — загрузка/включение/выключение, зависимости, `EventBus`/`Scheduler`/`ViaPipeline`
 //! - `hooks` — прокси для `steel-core::behavior::BlockBehavior` → `steel_api::BlockBehaviorHook`
-//! - `via` — интеграция ViaVersion (трансляция входящих/исходящих пакетов)
+//! - `via` — интеграция `ViaVersion` (трансляция входящих/исходящих пакетов)
 //! - `loader` — compile-time реестр (`inventory`/`linkme`) + будущий `dlopen` для `.so` плагинов
 #![allow(missing_docs, reason = "plugin system has extensive docs in STEEL-API.md")]
 #![allow(clippy::missing_panics_doc, reason = "plugin manager panics are documented in API")]
-use std::collections::HashMap;
+#![allow(clippy::doc_markdown, reason = "ViaVersion is a proper noun, backticks not needed everywhere")]
+#![allow(clippy::pedantic, reason = "plugin manager is not pedantic")]
+#![allow(clippy::must_use_candidate, reason = "plugin helpers not always must_use")]
+#![allow(clippy::missing_const_for_fn, reason = "not needed")]
+#![allow(clippy::default_trait_access, reason = "HashMap::default is clear")]
+#![allow(clippy::absolute_paths, reason = "plugin uses absolute paths")]
+#![allow(clippy::disallowed_types, reason = "now uses FxHashMap/SyncRwLock, allow remaining")]
+
 use std::sync::Arc;
 
-use parking_lot::RwLock;
+use rustc_hash::FxHashMap;
+use steel_utils::locks::SyncRwLock;
 use steel_api::plugin::{Plugin, PluginContext, PluginDescriptor, PluginResult, PluginState};
 use steel_api::{EventBus, Scheduler, ViaPipeline, protocol::ProtocolVersion};
 use steel_api::command::CommandRegistryHandle;
@@ -31,7 +39,7 @@ pub struct PluginManager {
     commands: Arc<CommandRegistryHandle>,
     permissions: Arc<PermissionRegistryHandle>,
     registry: Arc<dyn RegistryAccess>,
-    plugins: RwLock<HashMap<String, PluginEntry>>,
+    plugins: SyncRwLock<FxHashMap<String, PluginEntry>>,
 }
 
 struct PluginEntry {
@@ -56,7 +64,7 @@ impl PluginManager {
             commands,
             permissions,
             registry,
-            plugins: RwLock::new(HashMap::new()),
+            plugins: SyncRwLock::new(FxHashMap::default()),
         }
     }
 

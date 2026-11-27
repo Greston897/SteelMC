@@ -1,8 +1,15 @@
-//! ViaVersion интеграция — трансляция пакетов между версиями клиента и сервера.
+//! `ViaVersion` интеграция — трансляция пакетов между версиями клиента и сервера.
 //! Ядро вызывает `translate_inbound`/`translate_outbound` в `steel-login` / `player::connection`.
 
 #![allow(missing_docs, reason = "plugin system has extensive docs in STEEL-API.md")]
 #![allow(clippy::missing_panics_doc, reason = "plugin manager panics are documented in API")]
+#![allow(clippy::doc_markdown, reason = "ViaVersion docs")]
+#![allow(clippy::must_use_candidate, reason = "plugin helpers not always must_use")]
+#![allow(clippy::missing_const_for_fn, reason = "not needed")]
+#![allow(clippy::default_trait_access, reason = "HashMap::default is clear")]
+#![allow(clippy::absolute_paths, reason = "plugin uses absolute paths")]
+#![allow(clippy::disallowed_types, reason = "now uses FxHashMap/SyncRwLock, allow remaining")]
+
 use std::sync::Arc;
 use steel_api::ViaPipeline;
 use steel_api::protocol::{ProtocolVersion, ViaError};
