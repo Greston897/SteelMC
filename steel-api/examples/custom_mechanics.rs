@@ -7,8 +7,14 @@
 #![allow(clippy::print_stdout, reason = "example prints")]
 #![allow(clippy::too_many_lines, reason = "example registers many mechanics")]
 #![allow(clippy::redundant_clone, reason = "example")]
-#![allow(clippy::absolute_paths, reason = "example uses absolute paths for clarity")]
-#![allow(clippy::unnecessary_literal_bound, reason = "example plugin name is static")]
+#![allow(
+    clippy::absolute_paths,
+    reason = "example uses absolute paths for clarity"
+)]
+#![allow(
+    clippy::unnecessary_literal_bound,
+    reason = "example plugin name is static"
+)]
 
 use std::sync::Arc;
 use steel_api::block::{Block, BlockBehaviorHook};
