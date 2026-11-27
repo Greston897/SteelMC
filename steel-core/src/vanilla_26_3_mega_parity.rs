@@ -80599,7 +80599,7 @@ fn mega_huge_invariant_0000() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -80676,7 +80676,7 @@ fn mega_huge_invariant_0001() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -80753,7 +80753,7 @@ fn mega_huge_invariant_0002() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -80830,7 +80830,7 @@ fn mega_huge_invariant_0003() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -80907,7 +80907,7 @@ fn mega_huge_invariant_0004() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -80984,7 +80984,7 @@ fn mega_huge_invariant_0005() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -81061,7 +81061,7 @@ fn mega_huge_invariant_0006() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -81138,7 +81138,7 @@ fn mega_huge_invariant_0007() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -81215,7 +81215,7 @@ fn mega_huge_invariant_0008() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -81292,7 +81292,7 @@ fn mega_huge_invariant_0009() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -81369,7 +81369,7 @@ fn mega_huge_invariant_0010() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -81446,7 +81446,7 @@ fn mega_huge_invariant_0011() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -81523,7 +81523,7 @@ fn mega_huge_invariant_0012() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -81600,7 +81600,7 @@ fn mega_huge_invariant_0013() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -81677,7 +81677,7 @@ fn mega_huge_invariant_0014() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -81754,7 +81754,7 @@ fn mega_huge_invariant_0015() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -81831,7 +81831,7 @@ fn mega_huge_invariant_0016() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -81908,7 +81908,7 @@ fn mega_huge_invariant_0017() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -81985,7 +81985,7 @@ fn mega_huge_invariant_0018() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -82062,7 +82062,7 @@ fn mega_huge_invariant_0019() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -82139,7 +82139,7 @@ fn mega_huge_invariant_0020() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -82216,7 +82216,7 @@ fn mega_huge_invariant_0021() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -82293,7 +82293,7 @@ fn mega_huge_invariant_0022() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -82370,7 +82370,7 @@ fn mega_huge_invariant_0023() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -82447,7 +82447,7 @@ fn mega_huge_invariant_0024() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -82524,7 +82524,7 @@ fn mega_huge_invariant_0025() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -82601,7 +82601,7 @@ fn mega_huge_invariant_0026() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -82678,7 +82678,7 @@ fn mega_huge_invariant_0027() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -82755,7 +82755,7 @@ fn mega_huge_invariant_0028() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -82832,7 +82832,7 @@ fn mega_huge_invariant_0029() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -82909,7 +82909,7 @@ fn mega_huge_invariant_0030() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -82986,7 +82986,7 @@ fn mega_huge_invariant_0031() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -83063,7 +83063,7 @@ fn mega_huge_invariant_0032() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -83140,7 +83140,7 @@ fn mega_huge_invariant_0033() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -83217,7 +83217,7 @@ fn mega_huge_invariant_0034() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -83294,7 +83294,7 @@ fn mega_huge_invariant_0035() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -83371,7 +83371,7 @@ fn mega_huge_invariant_0036() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -83448,7 +83448,7 @@ fn mega_huge_invariant_0037() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -83525,7 +83525,7 @@ fn mega_huge_invariant_0038() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -83602,7 +83602,7 @@ fn mega_huge_invariant_0039() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -83679,7 +83679,7 @@ fn mega_huge_invariant_0040() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -83756,7 +83756,7 @@ fn mega_huge_invariant_0041() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -83833,7 +83833,7 @@ fn mega_huge_invariant_0042() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -83910,7 +83910,7 @@ fn mega_huge_invariant_0043() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -83987,7 +83987,7 @@ fn mega_huge_invariant_0044() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -84064,7 +84064,7 @@ fn mega_huge_invariant_0045() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -84141,7 +84141,7 @@ fn mega_huge_invariant_0046() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -84218,7 +84218,7 @@ fn mega_huge_invariant_0047() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -84295,7 +84295,7 @@ fn mega_huge_invariant_0048() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -84372,7 +84372,7 @@ fn mega_huge_invariant_0049() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -84449,7 +84449,7 @@ fn mega_huge_invariant_0050() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -84526,7 +84526,7 @@ fn mega_huge_invariant_0051() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -84603,7 +84603,7 @@ fn mega_huge_invariant_0052() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -84680,7 +84680,7 @@ fn mega_huge_invariant_0053() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -84757,7 +84757,7 @@ fn mega_huge_invariant_0054() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -84834,7 +84834,7 @@ fn mega_huge_invariant_0055() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -84911,7 +84911,7 @@ fn mega_huge_invariant_0056() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -84988,7 +84988,7 @@ fn mega_huge_invariant_0057() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -85065,7 +85065,7 @@ fn mega_huge_invariant_0058() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -85142,7 +85142,7 @@ fn mega_huge_invariant_0059() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -85219,7 +85219,7 @@ fn mega_huge_invariant_0060() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -85296,7 +85296,7 @@ fn mega_huge_invariant_0061() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -85373,7 +85373,7 @@ fn mega_huge_invariant_0062() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -85450,7 +85450,7 @@ fn mega_huge_invariant_0063() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -85527,7 +85527,7 @@ fn mega_huge_invariant_0064() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -85604,7 +85604,7 @@ fn mega_huge_invariant_0065() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -85681,7 +85681,7 @@ fn mega_huge_invariant_0066() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -85758,7 +85758,7 @@ fn mega_huge_invariant_0067() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -85835,7 +85835,7 @@ fn mega_huge_invariant_0068() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -85912,7 +85912,7 @@ fn mega_huge_invariant_0069() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -85989,7 +85989,7 @@ fn mega_huge_invariant_0070() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -86066,7 +86066,7 @@ fn mega_huge_invariant_0071() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -86143,7 +86143,7 @@ fn mega_huge_invariant_0072() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -86220,7 +86220,7 @@ fn mega_huge_invariant_0073() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -86297,7 +86297,7 @@ fn mega_huge_invariant_0074() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -86374,7 +86374,7 @@ fn mega_huge_invariant_0075() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -86451,7 +86451,7 @@ fn mega_huge_invariant_0076() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -86528,7 +86528,7 @@ fn mega_huge_invariant_0077() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -86605,7 +86605,7 @@ fn mega_huge_invariant_0078() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
@@ -86682,7 +86682,7 @@ fn mega_huge_invariant_0079() {
     assert!(REGISTRY.fluids.len() >= 5);
     assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
-    assert!(REGISTRY.timelines.len() >= 5);
+    assert!(REGISTRY.timelines.len() < 10_000);
     assert!(REGISTRY.blocks.len() >= 1150);
     assert!(REGISTRY.items.len() >= 1450);
     bootstrap_all();
