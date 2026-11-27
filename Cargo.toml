@@ -47,6 +47,7 @@ steel-registry = { path = "steel-registry" }
 steel-utils = { path = "steel-utils" }
 steel-worldgen = { path = "steel-worldgen" }
 steel-math = { path = "steel-math" }
+steel-api = { path = "steel-api" }
 
 # Async runtime
 tokio = { version = "1.54.1", features = ["macros", "sync", "io-util", "rt", "time"] }
