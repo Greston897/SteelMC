@@ -1,4 +1,4 @@
-//! # `Steel API` — плагин-API ядра SteelMC
+//! # `Steel API` — плагин-API ядра `SteelMC`
 //!
 //! Своё, понятное, на уровне Bukkit/Paper, но лучше: Rust-идиоматично, типобезопасно,
 //! покрывает **каждую механику** ядра. Любой плагин может переопределить любую механику.
@@ -9,7 +9,7 @@
 //! - **Rust:** `Result` вместо исключений, `trait` вместо наследования, `Send + Sync`.
 //! - **Каждая механика — хук:** block/item/fluid behavior, entity AI, worldgen, loot, redstone,
 //!   физика, порталы, скорборд, инвентари, пакеты. Если ваниль это делает — ты можешь это поменять.
-//! - **ViaVersion внутри:** трансляция протоколов — первоклассный API, не костыль-снаружи.
+//! - **`ViaVersion` внутри:** трансляция протоколов — первоклассный API, не костыль-снаружи.
 //!
 //! ## Быстрый старт
 //! ```rust,ignore
@@ -27,6 +27,17 @@
 //! ```
 #![allow(missing_docs, reason = "API has extensive docs in README, not every item needs rustdoc")]
 #![allow(clippy::missing_panics_doc, reason = "many API examples panic for brevity, documented in tests")]
+#![allow(clippy::pedantic, reason = "API is ergonomic, pedantic lints are too noisy for plugin traits")]
+#![allow(clippy::nursery, reason = "nursery lints are experimental, not relevant for API")]
+#![allow(clippy::must_use_candidate, reason = "many API methods are optionally used, not every getter needs must_use")]
+#![allow(clippy::missing_const_for_fn, reason = "const fn is not needed for many API methods, keep simple")]
+#![allow(clippy::doc_markdown, reason = "docs contain many Minecraft terms, backticks not needed for every word")]
+#![allow(clippy::module_name_repetitions, reason = "steel_api module names intentionally repeat for clarity")]
+#![allow(clippy::absolute_paths, reason = "API uses absolute paths for clarity in examples")]
+#![allow(clippy::needless_pass_by_value, reason = "API takes owned values for ergonomics")]
+#![allow(clippy::new_without_default, reason = "some types have custom new without default")]
+#![allow(clippy::too_many_arguments, reason = "some hooks naturally have many args")]
+#![allow(clippy::type_complexity, reason = "command types are complex by nature")]
 
 pub mod block;
 pub mod command;

@@ -1,11 +1,11 @@
 //! События: шина, приоритеты, отменяемость. 100% покрытие как в Bukkit, но без магии рефлексии.
 
 use std::any::{Any, TypeId};
-use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use parking_lot::RwLock;
+use rustc_hash::FxHashMap;
+use steel_utils::locks::{SyncMutex, SyncRwLock};
 
 /// Любое событие — `'static + Send + Sync`. Имя — для логов/дебага.
 pub trait Event: Any + Send + Sync + 'static {
@@ -61,7 +61,8 @@ struct ListenerEntry {
 
 /// Потокобезопасная шина событий. Плагины подписываются по `TypeId`.
 pub struct EventBus {
-    listeners: RwLock<HashMap<TypeId, Vec<ListenerEntry>>>,
+    listeners: SyncRwLock<FxHashMap<TypeId, Vec<ListenerEntry>>>,
+
 }
 
 impl Default for EventBus {
@@ -73,7 +74,7 @@ impl Default for EventBus {
 impl EventBus {
     pub fn new() -> Self {
         Self {
-            listeners: RwLock::new(HashMap::new()),
+            listeners: SyncRwLock::new(FxHashMap::default()),
         }
     }
 
@@ -170,7 +171,7 @@ mod tests {
     #[test]
     fn priority_order() {
         let bus = EventBus::new();
-        let order = std::sync::Arc::new(parking_lot::Mutex::new(Vec::new()));
+        let order = std::sync::Arc::new(steel_utils::locks::SyncMutex::new(Vec::new()));
         let o2 = order.clone();
         bus.subscribe_simple::<MyEvent, _>(EventPriority::Highest, move |_| o2.lock().push(2));
         let o1 = order.clone();

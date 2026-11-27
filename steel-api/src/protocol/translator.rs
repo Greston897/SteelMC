@@ -1,9 +1,9 @@
 //! Транслятор пакетов — сердце ViaVersion. Плагины могут регистрировать свои.
 
-use std::collections::HashMap;
 use std::sync::Arc;
 
-use parking_lot::RwLock;
+use rustc_hash::{FxHashMap, FxHashSet};
+use steel_utils::locks::SyncRwLock;
 use thiserror::Error;
 
 use super::version::ProtocolVersion;
@@ -61,7 +61,7 @@ impl ProtocolTranslator for NoopTranslator {
 /// Конвейер Via — хранит граф трансляторов и находит путь `client_version -> server_version`.
 ///
 pub struct ViaPipeline {
-    translators: RwLock<HashMap<(i32, i32), Arc<dyn ProtocolTranslator>>>,
+    translators: SyncRwLock<FxHashMap<(i32, i32), Arc<dyn ProtocolTranslator>>>,
 }
 
 impl Default for ViaPipeline {
@@ -70,7 +70,7 @@ impl Default for ViaPipeline {
 
 impl ViaPipeline {
     pub fn new() -> Self {
-        let p = Self { translators: RwLock::new(HashMap::new()) };
+        let p = Self { translators: SyncRwLock::new(FxHashMap::default()) };
         // дефолтные passthrough между соседними известными версиями
         for w in ProtocolVersion::ALL.windows(2) {
             let a = w[0]; let b = w[1];
@@ -98,10 +98,10 @@ impl ViaPipeline {
         if from == to { return Some(Vec::new()); }
         let map = self.translators.read();
         // BFS
-        use std::collections::{VecDeque, HashSet, HashMap as Map};
+        use std::collections::VecDeque;
         let mut queue = VecDeque::new();
-        let mut visited = HashSet::new();
-        let mut prev: Map<i32, (i32, Arc<dyn ProtocolTranslator>)> = Map::new();
+        let mut visited = FxHashSet::default();
+        let mut prev: FxHashMap<i32, (i32, Arc<dyn ProtocolTranslator>)> = FxHashMap::default();
         queue.push_back(from);
         visited.insert(from);
         while let Some(cur) = queue.pop_front() {

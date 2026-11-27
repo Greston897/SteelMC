@@ -1,11 +1,11 @@
 //! Планировщик — синхронные/асинхронные задачи, как Bukkit Scheduler, но без checked exceptions.
 
-use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
-use parking_lot::Mutex;
+use rustc_hash::FxHashMap;
+use steel_utils::locks::SyncMutex;
 
 pub type TaskId = u64;
 
@@ -37,7 +37,7 @@ struct Task {
 }
 
 struct SchedulerInner {
-    tasks: Mutex<HashMap<TaskId, Task>>,
+    tasks: SyncMutex<FxHashMap<TaskId, Task>>,
     next_id: AtomicU64,
 }
 
@@ -67,7 +67,7 @@ impl Scheduler {
     pub fn new() -> Self {
         Self {
             inner: Arc::new(SchedulerInner {
-                tasks: Mutex::new(HashMap::new()),
+                tasks: SyncMutex::new(FxHashMap::default()),
                 next_id: AtomicU64::new(1),
             }),
         }

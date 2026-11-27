@@ -1,7 +1,7 @@
 //! Права — строковые ноды как в Bukkit/LuckPerms (`steel.build`, `myplugin.admin`), c дефолтами.
 
-use std::collections::HashMap;
-use parking_lot::RwLock;
+use rustc_hash::FxHashMap;
+use steel_utils::locks::SyncRwLock;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PermissionDefault {
@@ -22,12 +22,12 @@ pub struct Permission {
     pub name: String,
     pub description: String,
     pub default: PermissionDefault,
-    pub children: HashMap<String, bool>,
+    pub children: FxHashMap<String, bool>,
 }
 
 impl Permission {
     pub fn new(name: impl Into<String>, default: PermissionDefault) -> Self {
-        Self { name: name.into(), description: String::new(), default, children: HashMap::new() }
+        Self { name: name.into(), description: String::new(), default, children: FxHashMap::default() }
     }
     pub fn with_description(mut self, d: impl Into<String>) -> Self {
         self.description = d.into(); self
@@ -36,14 +36,14 @@ impl Permission {
 
 /// Реестр прав — инжектится в `PluginContext`.
 pub struct PermissionRegistryHandle {
-    perms: RwLock<HashMap<String, Permission>>,
+    perms: SyncRwLock<FxHashMap<String, Permission>>,
 }
 
 impl Default for PermissionRegistryHandle {
     fn default() -> Self { Self::new() }
 }
 impl PermissionRegistryHandle {
-    pub fn new() -> Self { Self { perms: RwLock::new(HashMap::new()) } }
+    pub fn new() -> Self { Self { perms: SyncRwLock::new(FxHashMap::default()) } }
 
     pub fn register(&self, perm: Permission) -> bool {
         let mut w = self.perms.write();

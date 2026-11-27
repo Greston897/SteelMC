@@ -2,7 +2,7 @@
 //! Плагин регистрирует `literal`/`argument` деревья, как в ванили/Paper.
 
 use std::sync::Arc;
-use parking_lot::RwLock;
+use steel_utils::locks::SyncRwLock;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -92,14 +92,14 @@ pub fn argument(_name: impl Into<String>, _parser: &str) -> CommandNode { Comman
 
 /// Хэндл реестра — ядро инжектит его в `PluginContext`.
 pub struct CommandRegistryHandle {
-    commands: RwLock<Vec<CommandNode>>,
+    commands: SyncRwLock<Vec<CommandNode>>,
 }
 
 impl Default for CommandRegistryHandle {
     fn default() -> Self { Self::new() }
 }
 impl CommandRegistryHandle {
-    pub fn new() -> Self { Self { commands: RwLock::new(Vec::new()) } }
+    pub fn new() -> Self { Self { commands: SyncRwLock::new(Vec::new()) } }
 
     pub fn register(&self, node: CommandNode) -> Result<(), CommandError> {
         let name = node.name.clone();

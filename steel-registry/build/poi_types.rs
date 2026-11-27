@@ -80,7 +80,7 @@ fn derive_matchers(poi: &PoiTypeJson) -> Vec<BlockMatcher> {
             // Rectangularity guard: the enumerated states must be exactly the cartesian
             // product of the free properties' observed values. A mismatch means this POI
             // needs a richer model than equality filters — fail the build loudly.
-            // TODO: This assumes a free property's observed values equal the block's full
+            // NOTE: This assumes a free property's observed values equal the block's full
             // value set (always true for vanilla `getStatesOfBlock`). Fully verifying that
             // would require loading block metadata from blocks.json.
             assert_eq!(

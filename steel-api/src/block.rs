@@ -1,8 +1,10 @@
 //! Блок-API: обёртка над `BlockStateId` + хуки поведения (замена любой механики).
 
-use steel_utils::{BlockPos, BlockStateId, Identifier};
+use rustc_hash::FxHashMap;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
+use steel_utils::locks::SyncRwLock;
+use steel_utils::{BlockPos, BlockStateId, Identifier};
 
 /// Лёгкая обёртка над блоком в мире.
 #[derive(Debug, Clone, Copy)]
@@ -42,7 +44,7 @@ pub trait BlockBehaviorHook: Send + Sync + 'static {
 
 /// Реестр хуков — хранится в `PluginContext`.
 pub struct BlockHooks {
-    hooks: parking_lot::RwLock<std::collections::HashMap<Identifier, Box<dyn BlockBehaviorHook>>>,
+    hooks: SyncRwLock<FxHashMap<Identifier, Box<dyn BlockBehaviorHook>>>,
 }
 
 impl Default for BlockHooks {
@@ -51,7 +53,7 @@ impl Default for BlockHooks {
 
 impl BlockHooks {
     pub fn new() -> Self {
-        Self { hooks: parking_lot::RwLock::new(Default::default()) }
+        Self { hooks: SyncRwLock::new(Default::default()) }
     }
     pub fn register(&self, id: Identifier, hook: Box<dyn BlockBehaviorHook>) {
         self.hooks.write().insert(id, hook);

@@ -19,6 +19,7 @@ tokio = { workspace = true, features = ["sync","time","rt"] }
 parking_lot.workspace = true
 smallvec.workspace = true
 bitflags.workspace = true
+rustc-hash.workspace = true
 uuid = { workspace = true }
 glam.workspace = true
 log.workspace = true

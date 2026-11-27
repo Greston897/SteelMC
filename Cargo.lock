@@ -2871,6 +2871,7 @@ dependencies = [
 name = "steel-api"
 version = "0.17.0+mc26.3"
 dependencies = [
+ "rustc-hash",
  "anyhow",
  "bitflags",
  "glam",
