@@ -2,7 +2,8 @@
 //! Плагин регистрирует `BlockBehaviorHook` через `steel_api::BlockHooks`,
 //! ядро делегирует сюда из `BlockBehaviorRegistry`.
 
-#![allow(missing_docs, clippy::missing_panics_doc)]
+#![allow(missing_docs, reason = "plugin system has extensive docs in STEEL-API.md")]
+#![allow(clippy::missing_panics_doc, reason = "plugin manager panics are documented in API")]
 use std::sync::{Arc, LazyLock};
 use parking_lot::RwLock;
 use steel_api::block::BlockBehaviorHook;

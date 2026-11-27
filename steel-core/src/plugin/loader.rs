@@ -1,7 +1,8 @@
 //! Загрузчик плагинов — пока compile-time (статическая линковка), в будущем `dlopen`.
 //! Паттерн как у `bevy`/`paper`: плагины регистрируются через `inventory` или явный `register`.
 
-#![allow(missing_docs, clippy::missing_panics_doc)]
+#![allow(missing_docs, reason = "plugin system has extensive docs in STEEL-API.md")]
+#![allow(clippy::missing_panics_doc, reason = "plugin manager panics are documented in API")]
 use std::sync::Arc;
 use steel_api::plugin::Plugin;
 use super::PluginManager;
@@ -22,4 +23,4 @@ pub fn register_all(mgr: &PluginManager, plugins: Vec<Arc<dyn Plugin>>) {
     }
 }
 
-/// Пример: `register_all(mgr, vec![Arc::new(MyPlugin::default())])` в `Server::new`.
+// Пример: `register_all(mgr, vec![Arc::new(MyPlugin::default())])` в `Server::new`.

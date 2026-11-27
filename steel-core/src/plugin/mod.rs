@@ -7,7 +7,8 @@
 //! - `hooks` — прокси для `steel-core::behavior::BlockBehavior` → `steel_api::BlockBehaviorHook`
 //! - `via` — интеграция ViaVersion (трансляция входящих/исходящих пакетов)
 //! - `loader` — compile-time реестр (`inventory`/`linkme`) + будущий `dlopen` для `.so` плагинов
-#![allow(missing_docs, clippy::missing_panics_doc)]
+#![allow(missing_docs, reason = "plugin system has extensive docs in STEEL-API.md")]
+#![allow(clippy::missing_panics_doc, reason = "plugin manager panics are documented in API")]
 use std::collections::HashMap;
 use std::sync::Arc;
 

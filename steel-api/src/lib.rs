@@ -1,4 +1,4 @@
-//! # Steel API — плагин-API ядра SteelMC
+//! # `Steel API` — плагин-API ядра SteelMC
 //!
 //! Своё, понятное, на уровне Bukkit/Paper, но лучше: Rust-идиоматично, типобезопасно,
 //! покрывает **каждую механику** ядра. Любой плагин может переопределить любую механику.
@@ -25,7 +25,8 @@
 //!     }
 //! }
 //! ```
-#![allow(missing_docs, clippy::missing_panics_doc)]
+#![allow(missing_docs, reason = "API has extensive docs in README, not every item needs rustdoc")]
+#![allow(clippy::missing_panics_doc, reason = "many API examples panic for brevity, documented in tests")]
 
 pub mod block;
 pub mod command;

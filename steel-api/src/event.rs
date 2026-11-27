@@ -55,7 +55,7 @@ struct ListenerEntry {
     id: u64,
     priority: EventPriority,
     handler: ArcHandler,
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "plugin name stored for debugging, will be used in diagnostics")]
     plugin: String,
 }
 

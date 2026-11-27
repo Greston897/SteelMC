@@ -28,6 +28,7 @@ impl TaskHandle {
 }
 
 struct Task {
+    #[expect(dead_code, reason = "task id stored for handle correlation, used in scheduler")]
     id: TaskId,
     plugin: String,
     repeating: Option<Duration>,

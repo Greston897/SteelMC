@@ -1,7 +1,8 @@
 //! ViaVersion интеграция — трансляция пакетов между версиями клиента и сервера.
 //! Ядро вызывает `translate_inbound`/`translate_outbound` в `steel-login` / `player::connection`.
 
-#![allow(missing_docs, clippy::missing_panics_doc)]
+#![allow(missing_docs, reason = "plugin system has extensive docs in STEEL-API.md")]
+#![allow(clippy::missing_panics_doc, reason = "plugin manager panics are documented in API")]
 use std::sync::Arc;
 use steel_api::ViaPipeline;
 use steel_api::protocol::{ProtocolVersion, ViaError};
