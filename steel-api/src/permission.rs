@@ -64,8 +64,7 @@ impl PermissionRegistryHandle {
 /// Хелпер для `Player::has_permission` — матчит wildcard `myplugin.*`.
 pub fn permission_matches(pattern: &str, permission: &str) -> bool {
     if pattern == permission { return true; }
-    if pattern.ends_with(".*") {
-        let prefix = &pattern[..pattern.len()-2];
+    if let Some(prefix) = pattern.strip_suffix(".*") {
         return permission == prefix || permission.starts_with(&format!("{prefix}."));
     }
     false

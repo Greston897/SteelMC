@@ -38,6 +38,11 @@
 #![allow(clippy::new_without_default, reason = "some types have custom new without default")]
 #![allow(clippy::too_many_arguments, reason = "some hooks naturally have many args")]
 #![allow(clippy::type_complexity, reason = "command types are complex by nature")]
+#![allow(clippy::clone_on_ref_ptr, reason = "Arc::clone is idiomatic in plugin API, explicit path is noisy")]
+#![allow(clippy::manual_strip, reason = "manual strip is clear for permission wildcard")]
+#![allow(unused_imports, reason = "some imports used only in tests")]
+
+use steel_protocol as _;
 
 pub mod block;
 pub mod command;

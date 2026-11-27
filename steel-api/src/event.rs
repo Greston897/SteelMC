@@ -171,7 +171,7 @@ mod tests {
     #[test]
     fn priority_order() {
         let bus = EventBus::new();
-        let order = std::sync::Arc::new(steel_utils::locks::SyncMutex::new(Vec::new()));
+        let order = Arc::new(SyncMutex::new(Vec::new()));
         let o2 = order.clone();
         bus.subscribe_simple::<MyEvent, _>(EventPriority::Highest, move |_| o2.lock().push(2));
         let o1 = order.clone();
