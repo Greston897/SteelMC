@@ -5,6 +5,7 @@
 //! Each test is deterministic, isolated via create_arena_world, and asserts
 //! heightmap >= -64, registry thresholds, and behavior liveness.
 
+#![allow(unfulfilled_lint_expectations)]
 #![allow(clippy::all, clippy::pedantic, clippy::nursery, clippy::restriction)]
 #![allow(unused_imports, unused_variables, dead_code, unused_mut, unused_assignments)]
 #![allow(clippy::too_many_lines, clippy::uninlined_format_args, clippy::cast_possible_truncation)]
@@ -226,7 +227,7 @@ fn assert_item_roundtrip(name: &str) {
 
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0000_blocks_building_stone() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -292,7 +293,7 @@ fn mega_30k_0000_blocks_building_stone() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0001_blocks_building_dirt() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -358,7 +359,7 @@ fn mega_30k_0001_blocks_building_dirt() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0002_blocks_building_grass_block() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -424,7 +425,7 @@ fn mega_30k_0002_blocks_building_grass_block() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0003_blocks_building_cobblestone() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -490,7 +491,7 @@ fn mega_30k_0003_blocks_building_cobblestone() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0004_blocks_building_oak_planks() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -556,7 +557,7 @@ fn mega_30k_0004_blocks_building_oak_planks() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0005_blocks_building_oak_log() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -622,7 +623,7 @@ fn mega_30k_0005_blocks_building_oak_log() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0006_blocks_building_birch_log() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -688,7 +689,7 @@ fn mega_30k_0006_blocks_building_birch_log() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0007_blocks_building_spruce_log() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -754,7 +755,7 @@ fn mega_30k_0007_blocks_building_spruce_log() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0008_blocks_building_glass() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -820,7 +821,7 @@ fn mega_30k_0008_blocks_building_glass() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0009_blocks_building_bedrock() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -886,7 +887,7 @@ fn mega_30k_0009_blocks_building_bedrock() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0010_blocks_building_sand() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -952,7 +953,7 @@ fn mega_30k_0010_blocks_building_sand() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0011_blocks_building_gravel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -1018,7 +1019,7 @@ fn mega_30k_0011_blocks_building_gravel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0012_blocks_building_gold_block() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -1084,7 +1085,7 @@ fn mega_30k_0012_blocks_building_gold_block() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0013_blocks_building_iron_block() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -1150,7 +1151,7 @@ fn mega_30k_0013_blocks_building_iron_block() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0014_blocks_building_diamond_block() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -1216,7 +1217,7 @@ fn mega_30k_0014_blocks_building_diamond_block() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0015_blocks_building_emerald_block() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -1282,7 +1283,7 @@ fn mega_30k_0015_blocks_building_emerald_block() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0016_blocks_building_obsidian() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -1348,7 +1349,7 @@ fn mega_30k_0016_blocks_building_obsidian() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0017_blocks_building_bricks() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -1414,7 +1415,7 @@ fn mega_30k_0017_blocks_building_bricks() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0018_blocks_building_bookshelf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -1480,7 +1481,7 @@ fn mega_30k_0018_blocks_building_bookshelf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0019_blocks_building_mossy_cobblestone() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -1546,7 +1547,7 @@ fn mega_30k_0019_blocks_building_mossy_cobblestone() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0020_blocks_building_tnt() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -1612,7 +1613,7 @@ fn mega_30k_0020_blocks_building_tnt() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0021_blocks_building_furnace() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -1678,7 +1679,7 @@ fn mega_30k_0021_blocks_building_furnace() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0022_blocks_building_chest() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -1744,7 +1745,7 @@ fn mega_30k_0022_blocks_building_chest() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0023_blocks_building_crafting_table() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -1810,7 +1811,7 @@ fn mega_30k_0023_blocks_building_crafting_table() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0024_blocks_building_anvil() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -1876,7 +1877,7 @@ fn mega_30k_0024_blocks_building_anvil() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0025_blocks_building_enchanting_table() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -1942,7 +1943,7 @@ fn mega_30k_0025_blocks_building_enchanting_table() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0026_blocks_building_end_portal_frame() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -2008,7 +2009,7 @@ fn mega_30k_0026_blocks_building_end_portal_frame() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0027_blocks_building_command_block() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -2074,7 +2075,7 @@ fn mega_30k_0027_blocks_building_command_block() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0028_blocks_building_beacon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -2140,7 +2141,7 @@ fn mega_30k_0028_blocks_building_beacon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0029_blocks_building_redstone_block() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -2206,7 +2207,7 @@ fn mega_30k_0029_blocks_building_redstone_block() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0030_blocks_building_stone() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -2272,7 +2273,7 @@ fn mega_30k_0030_blocks_building_stone() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0031_blocks_building_dirt() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -2338,7 +2339,7 @@ fn mega_30k_0031_blocks_building_dirt() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0032_blocks_building_grass_block() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -2404,7 +2405,7 @@ fn mega_30k_0032_blocks_building_grass_block() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0033_blocks_building_cobblestone() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -2470,7 +2471,7 @@ fn mega_30k_0033_blocks_building_cobblestone() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0034_blocks_building_oak_planks() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -2536,7 +2537,7 @@ fn mega_30k_0034_blocks_building_oak_planks() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0035_blocks_building_oak_log() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -2602,7 +2603,7 @@ fn mega_30k_0035_blocks_building_oak_log() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0036_blocks_building_birch_log() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -2668,7 +2669,7 @@ fn mega_30k_0036_blocks_building_birch_log() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0037_blocks_building_spruce_log() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -2734,7 +2735,7 @@ fn mega_30k_0037_blocks_building_spruce_log() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0038_blocks_building_glass() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -2800,7 +2801,7 @@ fn mega_30k_0038_blocks_building_glass() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0039_blocks_building_bedrock() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -2866,7 +2867,7 @@ fn mega_30k_0039_blocks_building_bedrock() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0040_blocks_building_sand() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -2932,7 +2933,7 @@ fn mega_30k_0040_blocks_building_sand() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0041_blocks_building_gravel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -2998,7 +2999,7 @@ fn mega_30k_0041_blocks_building_gravel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0042_blocks_building_gold_block() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -3064,7 +3065,7 @@ fn mega_30k_0042_blocks_building_gold_block() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0043_blocks_building_iron_block() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -3130,7 +3131,7 @@ fn mega_30k_0043_blocks_building_iron_block() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0044_blocks_building_diamond_block() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -3196,7 +3197,7 @@ fn mega_30k_0044_blocks_building_diamond_block() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0045_blocks_building_emerald_block() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -3262,7 +3263,7 @@ fn mega_30k_0045_blocks_building_emerald_block() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0046_blocks_building_obsidian() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -3328,7 +3329,7 @@ fn mega_30k_0046_blocks_building_obsidian() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0047_blocks_building_bricks() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -3394,7 +3395,7 @@ fn mega_30k_0047_blocks_building_bricks() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0048_blocks_building_bookshelf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -3460,7 +3461,7 @@ fn mega_30k_0048_blocks_building_bookshelf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0049_blocks_building_mossy_cobblestone() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -3526,7 +3527,7 @@ fn mega_30k_0049_blocks_building_mossy_cobblestone() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0050_blocks_building_tnt() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -3592,7 +3593,7 @@ fn mega_30k_0050_blocks_building_tnt() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0051_blocks_building_furnace() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -3658,7 +3659,7 @@ fn mega_30k_0051_blocks_building_furnace() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0052_blocks_building_chest() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -3724,7 +3725,7 @@ fn mega_30k_0052_blocks_building_chest() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0053_blocks_building_crafting_table() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -3790,7 +3791,7 @@ fn mega_30k_0053_blocks_building_crafting_table() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0054_blocks_building_anvil() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -3856,7 +3857,7 @@ fn mega_30k_0054_blocks_building_anvil() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0055_blocks_building_enchanting_table() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -3922,7 +3923,7 @@ fn mega_30k_0055_blocks_building_enchanting_table() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0056_blocks_building_end_portal_frame() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -3988,7 +3989,7 @@ fn mega_30k_0056_blocks_building_end_portal_frame() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0057_blocks_building_command_block() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -4054,7 +4055,7 @@ fn mega_30k_0057_blocks_building_command_block() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0058_blocks_building_beacon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -4120,7 +4121,7 @@ fn mega_30k_0058_blocks_building_beacon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0059_blocks_building_redstone_block() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -4186,7 +4187,7 @@ fn mega_30k_0059_blocks_building_redstone_block() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0060_blocks_building_stone() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -4252,7 +4253,7 @@ fn mega_30k_0060_blocks_building_stone() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0061_blocks_building_dirt() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -4318,7 +4319,7 @@ fn mega_30k_0061_blocks_building_dirt() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0062_blocks_building_grass_block() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -4384,7 +4385,7 @@ fn mega_30k_0062_blocks_building_grass_block() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0063_blocks_building_cobblestone() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -4450,7 +4451,7 @@ fn mega_30k_0063_blocks_building_cobblestone() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0064_blocks_building_oak_planks() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -4516,7 +4517,7 @@ fn mega_30k_0064_blocks_building_oak_planks() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0065_blocks_building_oak_log() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -4582,7 +4583,7 @@ fn mega_30k_0065_blocks_building_oak_log() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0066_blocks_building_birch_log() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -4648,7 +4649,7 @@ fn mega_30k_0066_blocks_building_birch_log() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0067_blocks_building_spruce_log() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -4714,7 +4715,7 @@ fn mega_30k_0067_blocks_building_spruce_log() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0068_blocks_building_glass() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -4780,7 +4781,7 @@ fn mega_30k_0068_blocks_building_glass() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0069_blocks_building_bedrock() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -4846,7 +4847,7 @@ fn mega_30k_0069_blocks_building_bedrock() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0070_blocks_redstone_redstone_wire() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -4912,7 +4913,7 @@ fn mega_30k_0070_blocks_redstone_redstone_wire() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0071_blocks_redstone_repeater() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -4978,7 +4979,7 @@ fn mega_30k_0071_blocks_redstone_repeater() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0072_blocks_redstone_comparator() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -5044,7 +5045,7 @@ fn mega_30k_0072_blocks_redstone_comparator() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0073_blocks_redstone_redstone_torch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -5110,7 +5111,7 @@ fn mega_30k_0073_blocks_redstone_redstone_torch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0074_blocks_redstone_redstone_block() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -5176,7 +5177,7 @@ fn mega_30k_0074_blocks_redstone_redstone_block() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0075_blocks_redstone_piston() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -5242,7 +5243,7 @@ fn mega_30k_0075_blocks_redstone_piston() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0076_blocks_redstone_sticky_piston() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -5308,7 +5309,7 @@ fn mega_30k_0076_blocks_redstone_sticky_piston() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0077_blocks_redstone_observer() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -5374,7 +5375,7 @@ fn mega_30k_0077_blocks_redstone_observer() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0078_blocks_redstone_dispenser() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -5440,7 +5441,7 @@ fn mega_30k_0078_blocks_redstone_dispenser() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0079_blocks_redstone_dropper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -5506,7 +5507,7 @@ fn mega_30k_0079_blocks_redstone_dropper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0080_blocks_redstone_hopper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -5572,7 +5573,7 @@ fn mega_30k_0080_blocks_redstone_hopper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0081_blocks_redstone_target() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -5638,7 +5639,7 @@ fn mega_30k_0081_blocks_redstone_target() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0082_blocks_redstone_lightning_rod() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -5704,7 +5705,7 @@ fn mega_30k_0082_blocks_redstone_lightning_rod() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0083_blocks_redstone_copper_bulb() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -5770,7 +5771,7 @@ fn mega_30k_0083_blocks_redstone_copper_bulb() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0084_blocks_redstone_daylight_detector() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -5836,7 +5837,7 @@ fn mega_30k_0084_blocks_redstone_daylight_detector() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0085_blocks_redstone_note_block() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -5902,7 +5903,7 @@ fn mega_30k_0085_blocks_redstone_note_block() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0086_blocks_redstone_powered_rail() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -5968,7 +5969,7 @@ fn mega_30k_0086_blocks_redstone_powered_rail() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0087_blocks_redstone_detector_rail() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -6034,7 +6035,7 @@ fn mega_30k_0087_blocks_redstone_detector_rail() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0088_blocks_redstone_activator_rail() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -6100,7 +6101,7 @@ fn mega_30k_0088_blocks_redstone_activator_rail() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0089_blocks_redstone_rail() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -6166,7 +6167,7 @@ fn mega_30k_0089_blocks_redstone_rail() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0090_blocks_redstone_redstone_wire() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -6232,7 +6233,7 @@ fn mega_30k_0090_blocks_redstone_redstone_wire() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0091_blocks_redstone_repeater() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -6298,7 +6299,7 @@ fn mega_30k_0091_blocks_redstone_repeater() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0092_blocks_redstone_comparator() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -6364,7 +6365,7 @@ fn mega_30k_0092_blocks_redstone_comparator() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0093_blocks_redstone_redstone_torch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -6430,7 +6431,7 @@ fn mega_30k_0093_blocks_redstone_redstone_torch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0094_blocks_redstone_redstone_block() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -6496,7 +6497,7 @@ fn mega_30k_0094_blocks_redstone_redstone_block() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0095_blocks_redstone_piston() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -6562,7 +6563,7 @@ fn mega_30k_0095_blocks_redstone_piston() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0096_blocks_redstone_sticky_piston() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -6628,7 +6629,7 @@ fn mega_30k_0096_blocks_redstone_sticky_piston() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0097_blocks_redstone_observer() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -6694,7 +6695,7 @@ fn mega_30k_0097_blocks_redstone_observer() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0098_blocks_redstone_dispenser() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -6760,7 +6761,7 @@ fn mega_30k_0098_blocks_redstone_dispenser() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0099_blocks_redstone_dropper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -6826,7 +6827,7 @@ fn mega_30k_0099_blocks_redstone_dropper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0100_blocks_redstone_hopper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -6892,7 +6893,7 @@ fn mega_30k_0100_blocks_redstone_hopper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0101_blocks_redstone_target() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -6958,7 +6959,7 @@ fn mega_30k_0101_blocks_redstone_target() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0102_blocks_redstone_lightning_rod() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -7024,7 +7025,7 @@ fn mega_30k_0102_blocks_redstone_lightning_rod() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0103_blocks_redstone_copper_bulb() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -7090,7 +7091,7 @@ fn mega_30k_0103_blocks_redstone_copper_bulb() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0104_blocks_redstone_daylight_detector() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -7156,7 +7157,7 @@ fn mega_30k_0104_blocks_redstone_daylight_detector() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0105_blocks_redstone_note_block() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -7222,7 +7223,7 @@ fn mega_30k_0105_blocks_redstone_note_block() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0106_blocks_redstone_powered_rail() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -7288,7 +7289,7 @@ fn mega_30k_0106_blocks_redstone_powered_rail() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0107_blocks_redstone_detector_rail() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -7354,7 +7355,7 @@ fn mega_30k_0107_blocks_redstone_detector_rail() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0108_blocks_redstone_activator_rail() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -7420,7 +7421,7 @@ fn mega_30k_0108_blocks_redstone_activator_rail() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0109_blocks_redstone_rail() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -7486,7 +7487,7 @@ fn mega_30k_0109_blocks_redstone_rail() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0110_blocks_redstone_redstone_wire() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -7552,7 +7553,7 @@ fn mega_30k_0110_blocks_redstone_redstone_wire() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0111_blocks_redstone_repeater() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -7618,7 +7619,7 @@ fn mega_30k_0111_blocks_redstone_repeater() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0112_blocks_redstone_comparator() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -7684,7 +7685,7 @@ fn mega_30k_0112_blocks_redstone_comparator() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0113_blocks_redstone_redstone_torch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -7750,7 +7751,7 @@ fn mega_30k_0113_blocks_redstone_redstone_torch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0114_blocks_redstone_redstone_block() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -7816,7 +7817,7 @@ fn mega_30k_0114_blocks_redstone_redstone_block() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0115_blocks_redstone_piston() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -7882,7 +7883,7 @@ fn mega_30k_0115_blocks_redstone_piston() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0116_blocks_redstone_sticky_piston() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -7948,7 +7949,7 @@ fn mega_30k_0116_blocks_redstone_sticky_piston() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0117_blocks_redstone_observer() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -8014,7 +8015,7 @@ fn mega_30k_0117_blocks_redstone_observer() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0118_blocks_redstone_dispenser() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -8080,7 +8081,7 @@ fn mega_30k_0118_blocks_redstone_dispenser() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0119_blocks_redstone_dropper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -8146,7 +8147,7 @@ fn mega_30k_0119_blocks_redstone_dropper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0120_blocks_vegetation_oak_sapling() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -8212,7 +8213,7 @@ fn mega_30k_0120_blocks_vegetation_oak_sapling() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0121_blocks_vegetation_birch_sapling() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -8278,7 +8279,7 @@ fn mega_30k_0121_blocks_vegetation_birch_sapling() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0122_blocks_vegetation_wheat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -8344,7 +8345,7 @@ fn mega_30k_0122_blocks_vegetation_wheat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0123_blocks_vegetation_carrots() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -8410,7 +8411,7 @@ fn mega_30k_0123_blocks_vegetation_carrots() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0124_blocks_vegetation_potatoes() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -8476,7 +8477,7 @@ fn mega_30k_0124_blocks_vegetation_potatoes() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0125_blocks_vegetation_cactus() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -8542,7 +8543,7 @@ fn mega_30k_0125_blocks_vegetation_cactus() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0126_blocks_vegetation_sugar_cane() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -8608,7 +8609,7 @@ fn mega_30k_0126_blocks_vegetation_sugar_cane() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0127_blocks_vegetation_bamboo() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -8674,7 +8675,7 @@ fn mega_30k_0127_blocks_vegetation_bamboo() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0128_blocks_vegetation_kelp() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -8740,7 +8741,7 @@ fn mega_30k_0128_blocks_vegetation_kelp() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0129_blocks_vegetation_vine() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -8806,7 +8807,7 @@ fn mega_30k_0129_blocks_vegetation_vine() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0130_blocks_vegetation_glow_lichen() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -8872,7 +8873,7 @@ fn mega_30k_0130_blocks_vegetation_glow_lichen() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0131_blocks_vegetation_sweet_berry_bush() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -8938,7 +8939,7 @@ fn mega_30k_0131_blocks_vegetation_sweet_berry_bush() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0132_blocks_vegetation_cocoa() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -9004,7 +9005,7 @@ fn mega_30k_0132_blocks_vegetation_cocoa() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0133_blocks_vegetation_nether_wart() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -9070,7 +9071,7 @@ fn mega_30k_0133_blocks_vegetation_nether_wart() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0134_blocks_vegetation_chorus_plant() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -9136,7 +9137,7 @@ fn mega_30k_0134_blocks_vegetation_chorus_plant() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0135_blocks_vegetation_chorus_flower() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -9202,7 +9203,7 @@ fn mega_30k_0135_blocks_vegetation_chorus_flower() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0136_blocks_vegetation_azalea() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -9268,7 +9269,7 @@ fn mega_30k_0136_blocks_vegetation_azalea() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0137_blocks_vegetation_flowering_azalea() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -9334,7 +9335,7 @@ fn mega_30k_0137_blocks_vegetation_flowering_azalea() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0138_blocks_vegetation_mangrove_propagule() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -9400,7 +9401,7 @@ fn mega_30k_0138_blocks_vegetation_mangrove_propagule() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0139_blocks_vegetation_cherry_sapling() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -9466,7 +9467,7 @@ fn mega_30k_0139_blocks_vegetation_cherry_sapling() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0140_blocks_vegetation_oak_sapling() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -9532,7 +9533,7 @@ fn mega_30k_0140_blocks_vegetation_oak_sapling() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0141_blocks_vegetation_birch_sapling() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -9598,7 +9599,7 @@ fn mega_30k_0141_blocks_vegetation_birch_sapling() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0142_blocks_vegetation_wheat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -9664,7 +9665,7 @@ fn mega_30k_0142_blocks_vegetation_wheat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0143_blocks_vegetation_carrots() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -9730,7 +9731,7 @@ fn mega_30k_0143_blocks_vegetation_carrots() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0144_blocks_vegetation_potatoes() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -9796,7 +9797,7 @@ fn mega_30k_0144_blocks_vegetation_potatoes() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0145_blocks_vegetation_cactus() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -9862,7 +9863,7 @@ fn mega_30k_0145_blocks_vegetation_cactus() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0146_blocks_vegetation_sugar_cane() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -9928,7 +9929,7 @@ fn mega_30k_0146_blocks_vegetation_sugar_cane() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0147_blocks_vegetation_bamboo() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -9994,7 +9995,7 @@ fn mega_30k_0147_blocks_vegetation_bamboo() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0148_blocks_vegetation_kelp() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -10060,7 +10061,7 @@ fn mega_30k_0148_blocks_vegetation_kelp() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0149_blocks_vegetation_vine() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -10126,7 +10127,7 @@ fn mega_30k_0149_blocks_vegetation_vine() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0150_blocks_vegetation_glow_lichen() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -10192,7 +10193,7 @@ fn mega_30k_0150_blocks_vegetation_glow_lichen() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0151_blocks_vegetation_sweet_berry_bush() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -10258,7 +10259,7 @@ fn mega_30k_0151_blocks_vegetation_sweet_berry_bush() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0152_blocks_vegetation_cocoa() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -10324,7 +10325,7 @@ fn mega_30k_0152_blocks_vegetation_cocoa() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0153_blocks_vegetation_nether_wart() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -10390,7 +10391,7 @@ fn mega_30k_0153_blocks_vegetation_nether_wart() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0154_blocks_vegetation_chorus_plant() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -10456,7 +10457,7 @@ fn mega_30k_0154_blocks_vegetation_chorus_plant() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0155_blocks_container_chest() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -10522,7 +10523,7 @@ fn mega_30k_0155_blocks_container_chest() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0156_blocks_container_barrel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -10588,7 +10589,7 @@ fn mega_30k_0156_blocks_container_barrel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0157_blocks_container_furnace() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -10654,7 +10655,7 @@ fn mega_30k_0157_blocks_container_furnace() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0158_blocks_container_blast_furnace() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -10720,7 +10721,7 @@ fn mega_30k_0158_blocks_container_blast_furnace() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0159_blocks_container_smoker() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -10786,7 +10787,7 @@ fn mega_30k_0159_blocks_container_smoker() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0160_blocks_container_hopper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -10852,7 +10853,7 @@ fn mega_30k_0160_blocks_container_hopper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0161_blocks_container_dispenser() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -10918,7 +10919,7 @@ fn mega_30k_0161_blocks_container_dispenser() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0162_blocks_container_dropper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -10984,7 +10985,7 @@ fn mega_30k_0162_blocks_container_dropper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0163_blocks_container_shulker_box() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -11050,7 +11051,7 @@ fn mega_30k_0163_blocks_container_shulker_box() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0164_blocks_container_ender_chest() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -11116,7 +11117,7 @@ fn mega_30k_0164_blocks_container_ender_chest() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0165_blocks_container_beacon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -11182,7 +11183,7 @@ fn mega_30k_0165_blocks_container_beacon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0166_blocks_container_brewing_stand() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -11248,7 +11249,7 @@ fn mega_30k_0166_blocks_container_brewing_stand() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0167_blocks_container_crafting_table() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -11314,7 +11315,7 @@ fn mega_30k_0167_blocks_container_crafting_table() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0168_blocks_container_anvil() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -11380,7 +11381,7 @@ fn mega_30k_0168_blocks_container_anvil() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0169_blocks_container_grindstone() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -11446,7 +11447,7 @@ fn mega_30k_0169_blocks_container_grindstone() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0170_blocks_container_stonecutter() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -11512,7 +11513,7 @@ fn mega_30k_0170_blocks_container_stonecutter() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0171_blocks_container_loom() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -11578,7 +11579,7 @@ fn mega_30k_0171_blocks_container_loom() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0172_blocks_container_cartography_table() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -11644,7 +11645,7 @@ fn mega_30k_0172_blocks_container_cartography_table() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0173_blocks_container_smithing_table() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -11710,7 +11711,7 @@ fn mega_30k_0173_blocks_container_smithing_table() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0174_blocks_container_crafter() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -11776,7 +11777,7 @@ fn mega_30k_0174_blocks_container_crafter() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0175_blocks_container_chest() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -11842,7 +11843,7 @@ fn mega_30k_0175_blocks_container_chest() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0176_blocks_container_barrel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -11908,7 +11909,7 @@ fn mega_30k_0176_blocks_container_barrel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0177_blocks_container_furnace() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -11974,7 +11975,7 @@ fn mega_30k_0177_blocks_container_furnace() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0178_blocks_container_blast_furnace() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -12040,7 +12041,7 @@ fn mega_30k_0178_blocks_container_blast_furnace() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0179_blocks_container_smoker() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -12106,7 +12107,7 @@ fn mega_30k_0179_blocks_container_smoker() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0180_blocks_container_hopper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -12172,7 +12173,7 @@ fn mega_30k_0180_blocks_container_hopper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0181_blocks_container_dispenser() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -12238,7 +12239,7 @@ fn mega_30k_0181_blocks_container_dispenser() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0182_blocks_container_dropper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -12304,7 +12305,7 @@ fn mega_30k_0182_blocks_container_dropper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0183_blocks_container_shulker_box() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -12370,7 +12371,7 @@ fn mega_30k_0183_blocks_container_shulker_box() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0184_blocks_container_ender_chest() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -12436,7 +12437,7 @@ fn mega_30k_0184_blocks_container_ender_chest() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0185_blocks_container_beacon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -12502,7 +12503,7 @@ fn mega_30k_0185_blocks_container_beacon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0186_blocks_container_brewing_stand() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -12568,7 +12569,7 @@ fn mega_30k_0186_blocks_container_brewing_stand() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0187_blocks_container_crafting_table() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -12634,7 +12635,7 @@ fn mega_30k_0187_blocks_container_crafting_table() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0188_blocks_container_anvil() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -12700,7 +12701,7 @@ fn mega_30k_0188_blocks_container_anvil() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0189_blocks_container_grindstone() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -12766,7 +12767,7 @@ fn mega_30k_0189_blocks_container_grindstone() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0190_fluids_water() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -12832,7 +12833,7 @@ fn mega_30k_0190_fluids_water() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0191_fluids_lava() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -12898,7 +12899,7 @@ fn mega_30k_0191_fluids_lava() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0192_fluids_flowing_water() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -12964,7 +12965,7 @@ fn mega_30k_0192_fluids_flowing_water() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0193_fluids_flowing_lava() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -13030,7 +13031,7 @@ fn mega_30k_0193_fluids_flowing_lava() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0194_fluids_water() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -13096,7 +13097,7 @@ fn mega_30k_0194_fluids_water() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0195_fluids_lava() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -13162,7 +13163,7 @@ fn mega_30k_0195_fluids_lava() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0196_fluids_flowing_water() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -13228,7 +13229,7 @@ fn mega_30k_0196_fluids_flowing_water() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0197_fluids_flowing_lava() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -13294,7 +13295,7 @@ fn mega_30k_0197_fluids_flowing_lava() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0198_fluids_water() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -13360,7 +13361,7 @@ fn mega_30k_0198_fluids_water() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0199_fluids_lava() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -13426,7 +13427,7 @@ fn mega_30k_0199_fluids_lava() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0200_fluids_flowing_water() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -13492,7 +13493,7 @@ fn mega_30k_0200_fluids_flowing_water() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0201_fluids_flowing_lava() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -13558,7 +13559,7 @@ fn mega_30k_0201_fluids_flowing_lava() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0202_fluids_water() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -13624,7 +13625,7 @@ fn mega_30k_0202_fluids_water() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0203_fluids_lava() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -13690,7 +13691,7 @@ fn mega_30k_0203_fluids_lava() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0204_fluids_flowing_water() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -13756,7 +13757,7 @@ fn mega_30k_0204_fluids_flowing_water() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0205_fluids_flowing_lava() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -13822,7 +13823,7 @@ fn mega_30k_0205_fluids_flowing_lava() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0206_fluids_water() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -13888,7 +13889,7 @@ fn mega_30k_0206_fluids_water() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0207_fluids_lava() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -13954,7 +13955,7 @@ fn mega_30k_0207_fluids_lava() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0208_fluids_flowing_water() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -14020,7 +14021,7 @@ fn mega_30k_0208_fluids_flowing_water() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0209_fluids_flowing_lava() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -14086,7 +14087,7 @@ fn mega_30k_0209_fluids_flowing_lava() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0210_fluids_water() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -14152,7 +14153,7 @@ fn mega_30k_0210_fluids_water() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0211_fluids_lava() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -14218,7 +14219,7 @@ fn mega_30k_0211_fluids_lava() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0212_fluids_flowing_water() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -14284,7 +14285,7 @@ fn mega_30k_0212_fluids_flowing_water() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0213_fluids_flowing_lava() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -14350,7 +14351,7 @@ fn mega_30k_0213_fluids_flowing_lava() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0214_fluids_water() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -14416,7 +14417,7 @@ fn mega_30k_0214_fluids_water() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0215_entities_mobs_zombie() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -14482,7 +14483,7 @@ fn mega_30k_0215_entities_mobs_zombie() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0216_entities_mobs_skeleton() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -14548,7 +14549,7 @@ fn mega_30k_0216_entities_mobs_skeleton() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0217_entities_mobs_creeper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -14614,7 +14615,7 @@ fn mega_30k_0217_entities_mobs_creeper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0218_entities_mobs_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -14680,7 +14681,7 @@ fn mega_30k_0218_entities_mobs_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0219_entities_mobs_cave_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -14746,7 +14747,7 @@ fn mega_30k_0219_entities_mobs_cave_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0220_entities_mobs_enderman() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -14812,7 +14813,7 @@ fn mega_30k_0220_entities_mobs_enderman() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0221_entities_mobs_witch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -14878,7 +14879,7 @@ fn mega_30k_0221_entities_mobs_witch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0222_entities_mobs_blaze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -14944,7 +14945,7 @@ fn mega_30k_0222_entities_mobs_blaze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0223_entities_mobs_ghast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -15010,7 +15011,7 @@ fn mega_30k_0223_entities_mobs_ghast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0224_entities_mobs_slime() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -15076,7 +15077,7 @@ fn mega_30k_0224_entities_mobs_slime() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0225_entities_mobs_magma_cube() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -15142,7 +15143,7 @@ fn mega_30k_0225_entities_mobs_magma_cube() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0226_entities_mobs_warden() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -15208,7 +15209,7 @@ fn mega_30k_0226_entities_mobs_warden() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0227_entities_mobs_ender_dragon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -15274,7 +15275,7 @@ fn mega_30k_0227_entities_mobs_ender_dragon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0228_entities_mobs_wither() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -15340,7 +15341,7 @@ fn mega_30k_0228_entities_mobs_wither() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0229_entities_mobs_pig() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -15406,7 +15407,7 @@ fn mega_30k_0229_entities_mobs_pig() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0230_entities_mobs_cow() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -15472,7 +15473,7 @@ fn mega_30k_0230_entities_mobs_cow() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0231_entities_mobs_sheep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -15538,7 +15539,7 @@ fn mega_30k_0231_entities_mobs_sheep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0232_entities_mobs_chicken() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -15604,7 +15605,7 @@ fn mega_30k_0232_entities_mobs_chicken() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0233_entities_mobs_horse() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -15670,7 +15671,7 @@ fn mega_30k_0233_entities_mobs_horse() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0234_entities_mobs_wolf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -15736,7 +15737,7 @@ fn mega_30k_0234_entities_mobs_wolf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0235_entities_mobs_cat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -15802,7 +15803,7 @@ fn mega_30k_0235_entities_mobs_cat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0236_entities_mobs_parrot() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -15868,7 +15869,7 @@ fn mega_30k_0236_entities_mobs_parrot() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0237_entities_mobs_villager() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -15934,7 +15935,7 @@ fn mega_30k_0237_entities_mobs_villager() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0238_entities_mobs_wandering_trader() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -16000,7 +16001,7 @@ fn mega_30k_0238_entities_mobs_wandering_trader() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0239_entities_mobs_iron_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -16066,7 +16067,7 @@ fn mega_30k_0239_entities_mobs_iron_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0240_entities_mobs_snow_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -16132,7 +16133,7 @@ fn mega_30k_0240_entities_mobs_snow_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0241_entities_mobs_allay() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -16198,7 +16199,7 @@ fn mega_30k_0241_entities_mobs_allay() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0242_entities_mobs_frog() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -16264,7 +16265,7 @@ fn mega_30k_0242_entities_mobs_frog() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0243_entities_mobs_tadpole() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -16330,7 +16331,7 @@ fn mega_30k_0243_entities_mobs_tadpole() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0244_entities_mobs_axolotl() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -16396,7 +16397,7 @@ fn mega_30k_0244_entities_mobs_axolotl() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0245_entities_mobs_zombie() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -16462,7 +16463,7 @@ fn mega_30k_0245_entities_mobs_zombie() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0246_entities_mobs_skeleton() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -16528,7 +16529,7 @@ fn mega_30k_0246_entities_mobs_skeleton() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0247_entities_mobs_creeper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -16594,7 +16595,7 @@ fn mega_30k_0247_entities_mobs_creeper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0248_entities_mobs_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -16660,7 +16661,7 @@ fn mega_30k_0248_entities_mobs_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0249_entities_mobs_cave_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -16726,7 +16727,7 @@ fn mega_30k_0249_entities_mobs_cave_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0250_entities_mobs_enderman() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -16792,7 +16793,7 @@ fn mega_30k_0250_entities_mobs_enderman() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0251_entities_mobs_witch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -16858,7 +16859,7 @@ fn mega_30k_0251_entities_mobs_witch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0252_entities_mobs_blaze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -16924,7 +16925,7 @@ fn mega_30k_0252_entities_mobs_blaze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0253_entities_mobs_ghast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -16990,7 +16991,7 @@ fn mega_30k_0253_entities_mobs_ghast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0254_entities_mobs_slime() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -17056,7 +17057,7 @@ fn mega_30k_0254_entities_mobs_slime() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0255_entities_mobs_magma_cube() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -17122,7 +17123,7 @@ fn mega_30k_0255_entities_mobs_magma_cube() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0256_entities_mobs_warden() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -17188,7 +17189,7 @@ fn mega_30k_0256_entities_mobs_warden() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0257_entities_mobs_ender_dragon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -17254,7 +17255,7 @@ fn mega_30k_0257_entities_mobs_ender_dragon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0258_entities_mobs_wither() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -17320,7 +17321,7 @@ fn mega_30k_0258_entities_mobs_wither() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0259_entities_mobs_pig() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -17386,7 +17387,7 @@ fn mega_30k_0259_entities_mobs_pig() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0260_entities_mobs_cow() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -17452,7 +17453,7 @@ fn mega_30k_0260_entities_mobs_cow() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0261_entities_mobs_sheep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -17518,7 +17519,7 @@ fn mega_30k_0261_entities_mobs_sheep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0262_entities_mobs_chicken() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -17584,7 +17585,7 @@ fn mega_30k_0262_entities_mobs_chicken() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0263_entities_mobs_horse() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -17650,7 +17651,7 @@ fn mega_30k_0263_entities_mobs_horse() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0264_entities_mobs_wolf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -17716,7 +17717,7 @@ fn mega_30k_0264_entities_mobs_wolf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0265_entities_mobs_cat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -17782,7 +17783,7 @@ fn mega_30k_0265_entities_mobs_cat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0266_entities_mobs_parrot() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -17848,7 +17849,7 @@ fn mega_30k_0266_entities_mobs_parrot() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0267_entities_mobs_villager() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -17914,7 +17915,7 @@ fn mega_30k_0267_entities_mobs_villager() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0268_entities_mobs_wandering_trader() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -17980,7 +17981,7 @@ fn mega_30k_0268_entities_mobs_wandering_trader() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0269_entities_mobs_iron_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -18046,7 +18047,7 @@ fn mega_30k_0269_entities_mobs_iron_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0270_entities_mobs_snow_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -18112,7 +18113,7 @@ fn mega_30k_0270_entities_mobs_snow_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0271_entities_mobs_allay() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -18178,7 +18179,7 @@ fn mega_30k_0271_entities_mobs_allay() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0272_entities_mobs_frog() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -18244,7 +18245,7 @@ fn mega_30k_0272_entities_mobs_frog() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0273_entities_mobs_tadpole() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -18310,7 +18311,7 @@ fn mega_30k_0273_entities_mobs_tadpole() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0274_entities_mobs_axolotl() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -18376,7 +18377,7 @@ fn mega_30k_0274_entities_mobs_axolotl() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0275_entities_objects_tnt() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -18442,7 +18443,7 @@ fn mega_30k_0275_entities_objects_tnt() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0276_entities_objects_falling_block() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -18508,7 +18509,7 @@ fn mega_30k_0276_entities_objects_falling_block() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0277_entities_objects_armor_stand() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -18574,7 +18575,7 @@ fn mega_30k_0277_entities_objects_armor_stand() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0278_entities_objects_item_frame() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -18640,7 +18641,7 @@ fn mega_30k_0278_entities_objects_item_frame() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0279_entities_objects_minecart() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -18706,7 +18707,7 @@ fn mega_30k_0279_entities_objects_minecart() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0280_entities_objects_chest_minecart() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -18772,7 +18773,7 @@ fn mega_30k_0280_entities_objects_chest_minecart() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0281_entities_objects_hopper_minecart() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -18838,7 +18839,7 @@ fn mega_30k_0281_entities_objects_hopper_minecart() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0282_entities_objects_tnt_minecart() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -18904,7 +18905,7 @@ fn mega_30k_0282_entities_objects_tnt_minecart() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0283_entities_objects_tnt() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -18970,7 +18971,7 @@ fn mega_30k_0283_entities_objects_tnt() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0284_entities_objects_falling_block() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -19036,7 +19037,7 @@ fn mega_30k_0284_entities_objects_falling_block() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0285_entities_objects_armor_stand() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -19102,7 +19103,7 @@ fn mega_30k_0285_entities_objects_armor_stand() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0286_entities_objects_item_frame() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -19168,7 +19169,7 @@ fn mega_30k_0286_entities_objects_item_frame() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0287_entities_objects_minecart() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -19234,7 +19235,7 @@ fn mega_30k_0287_entities_objects_minecart() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0288_entities_objects_chest_minecart() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -19300,7 +19301,7 @@ fn mega_30k_0288_entities_objects_chest_minecart() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0289_entities_objects_hopper_minecart() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -19366,7 +19367,7 @@ fn mega_30k_0289_entities_objects_hopper_minecart() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0290_entities_objects_tnt_minecart() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -19432,7 +19433,7 @@ fn mega_30k_0290_entities_objects_tnt_minecart() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0291_entities_objects_tnt() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -19498,7 +19499,7 @@ fn mega_30k_0291_entities_objects_tnt() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0292_entities_objects_falling_block() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -19564,7 +19565,7 @@ fn mega_30k_0292_entities_objects_falling_block() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0293_entities_objects_armor_stand() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -19630,7 +19631,7 @@ fn mega_30k_0293_entities_objects_armor_stand() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0294_entities_objects_item_frame() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -19696,7 +19697,7 @@ fn mega_30k_0294_entities_objects_item_frame() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0295_entities_objects_minecart() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -19762,7 +19763,7 @@ fn mega_30k_0295_entities_objects_minecart() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0296_entities_objects_chest_minecart() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -19828,7 +19829,7 @@ fn mega_30k_0296_entities_objects_chest_minecart() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0297_entities_objects_hopper_minecart() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -19894,7 +19895,7 @@ fn mega_30k_0297_entities_objects_hopper_minecart() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0298_entities_objects_tnt_minecart() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -19960,7 +19961,7 @@ fn mega_30k_0298_entities_objects_tnt_minecart() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0299_entities_objects_tnt() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -20026,7 +20027,7 @@ fn mega_30k_0299_entities_objects_tnt() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0300_chunks_light_light() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -20092,7 +20093,7 @@ fn mega_30k_0300_chunks_light_light() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0301_chunks_light_heightmap() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -20158,7 +20159,7 @@ fn mega_30k_0301_chunks_light_heightmap() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0302_chunks_light_tickets() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -20224,7 +20225,7 @@ fn mega_30k_0302_chunks_light_tickets() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0303_chunks_light_status() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -20290,7 +20291,7 @@ fn mega_30k_0303_chunks_light_status() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0304_chunks_light_light() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -20356,7 +20357,7 @@ fn mega_30k_0304_chunks_light_light() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0305_chunks_light_heightmap() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -20422,7 +20423,7 @@ fn mega_30k_0305_chunks_light_heightmap() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0306_chunks_light_tickets() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -20488,7 +20489,7 @@ fn mega_30k_0306_chunks_light_tickets() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0307_chunks_light_status() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -20554,7 +20555,7 @@ fn mega_30k_0307_chunks_light_status() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0308_chunks_light_light() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -20620,7 +20621,7 @@ fn mega_30k_0308_chunks_light_light() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0309_chunks_light_heightmap() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -20686,7 +20687,7 @@ fn mega_30k_0309_chunks_light_heightmap() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0310_chunks_light_tickets() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -20752,7 +20753,7 @@ fn mega_30k_0310_chunks_light_tickets() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0311_chunks_light_status() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -20818,7 +20819,7 @@ fn mega_30k_0311_chunks_light_status() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0312_chunks_light_light() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -20884,7 +20885,7 @@ fn mega_30k_0312_chunks_light_light() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0313_chunks_light_heightmap() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -20950,7 +20951,7 @@ fn mega_30k_0313_chunks_light_heightmap() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0314_chunks_light_tickets() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -21016,7 +21017,7 @@ fn mega_30k_0314_chunks_light_tickets() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0315_chunks_light_status() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -21082,7 +21083,7 @@ fn mega_30k_0315_chunks_light_status() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0316_chunks_light_light() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -21148,7 +21149,7 @@ fn mega_30k_0316_chunks_light_light() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0317_chunks_light_heightmap() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -21214,7 +21215,7 @@ fn mega_30k_0317_chunks_light_heightmap() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0318_chunks_light_tickets() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -21280,7 +21281,7 @@ fn mega_30k_0318_chunks_light_tickets() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0319_chunks_light_status() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -21346,7 +21347,7 @@ fn mega_30k_0319_chunks_light_status() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0320_chunks_light_light() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -21412,7 +21413,7 @@ fn mega_30k_0320_chunks_light_light() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0321_chunks_light_heightmap() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -21478,7 +21479,7 @@ fn mega_30k_0321_chunks_light_heightmap() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0322_chunks_light_tickets() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -21544,7 +21545,7 @@ fn mega_30k_0322_chunks_light_tickets() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0323_chunks_light_status() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -21610,7 +21611,7 @@ fn mega_30k_0323_chunks_light_status() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0324_chunks_light_light() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -21676,7 +21677,7 @@ fn mega_30k_0324_chunks_light_light() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0325_chunks_light_heightmap() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -21742,7 +21743,7 @@ fn mega_30k_0325_chunks_light_heightmap() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0326_chunks_light_tickets() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -21808,7 +21809,7 @@ fn mega_30k_0326_chunks_light_tickets() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0327_chunks_light_status() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -21874,7 +21875,7 @@ fn mega_30k_0327_chunks_light_status() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0328_chunks_light_light() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -21940,7 +21941,7 @@ fn mega_30k_0328_chunks_light_light() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0329_chunks_light_heightmap() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -22006,7 +22007,7 @@ fn mega_30k_0329_chunks_light_heightmap() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0330_chunks_light_tickets() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -22072,7 +22073,7 @@ fn mega_30k_0330_chunks_light_tickets() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0331_chunks_light_status() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -22138,7 +22139,7 @@ fn mega_30k_0331_chunks_light_status() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0332_chunks_light_light() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -22204,7 +22205,7 @@ fn mega_30k_0332_chunks_light_light() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0333_chunks_light_heightmap() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -22270,7 +22271,7 @@ fn mega_30k_0333_chunks_light_heightmap() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0334_chunks_light_tickets() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -22336,7 +22337,7 @@ fn mega_30k_0334_chunks_light_tickets() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0335_world_weather_weather() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -22402,7 +22403,7 @@ fn mega_30k_0335_world_weather_weather() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0336_world_weather_clock() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -22468,7 +22469,7 @@ fn mega_30k_0336_world_weather_clock() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0337_world_weather_sleep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -22534,7 +22535,7 @@ fn mega_30k_0337_world_weather_sleep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0338_world_weather_waypoint() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -22600,7 +22601,7 @@ fn mega_30k_0338_world_weather_waypoint() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0339_world_weather_raid() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -22666,7 +22667,7 @@ fn mega_30k_0339_world_weather_raid() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0340_world_weather_portal() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -22732,7 +22733,7 @@ fn mega_30k_0340_world_weather_portal() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0341_world_weather_weather() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -22798,7 +22799,7 @@ fn mega_30k_0341_world_weather_weather() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0342_world_weather_clock() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -22864,7 +22865,7 @@ fn mega_30k_0342_world_weather_clock() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0343_world_weather_sleep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -22930,7 +22931,7 @@ fn mega_30k_0343_world_weather_sleep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0344_world_weather_waypoint() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -22996,7 +22997,7 @@ fn mega_30k_0344_world_weather_waypoint() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0345_world_weather_raid() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -23062,7 +23063,7 @@ fn mega_30k_0345_world_weather_raid() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0346_world_weather_portal() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -23128,7 +23129,7 @@ fn mega_30k_0346_world_weather_portal() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0347_world_weather_weather() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -23194,7 +23195,7 @@ fn mega_30k_0347_world_weather_weather() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0348_world_weather_clock() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -23260,7 +23261,7 @@ fn mega_30k_0348_world_weather_clock() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0349_world_weather_sleep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -23326,7 +23327,7 @@ fn mega_30k_0349_world_weather_sleep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0350_world_weather_waypoint() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -23392,7 +23393,7 @@ fn mega_30k_0350_world_weather_waypoint() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0351_world_weather_raid() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -23458,7 +23459,7 @@ fn mega_30k_0351_world_weather_raid() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0352_world_weather_portal() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -23524,7 +23525,7 @@ fn mega_30k_0352_world_weather_portal() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0353_world_weather_weather() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -23590,7 +23591,7 @@ fn mega_30k_0353_world_weather_weather() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0354_world_weather_clock() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -23656,7 +23657,7 @@ fn mega_30k_0354_world_weather_clock() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0355_world_weather_sleep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -23722,7 +23723,7 @@ fn mega_30k_0355_world_weather_sleep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0356_world_weather_waypoint() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -23788,7 +23789,7 @@ fn mega_30k_0356_world_weather_waypoint() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0357_world_weather_raid() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -23854,7 +23855,7 @@ fn mega_30k_0357_world_weather_raid() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0358_world_weather_portal() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -23920,7 +23921,7 @@ fn mega_30k_0358_world_weather_portal() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0359_world_weather_weather() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -23986,7 +23987,7 @@ fn mega_30k_0359_world_weather_weather() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0360_world_weather_clock() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -24052,7 +24053,7 @@ fn mega_30k_0360_world_weather_clock() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0361_world_weather_sleep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -24118,7 +24119,7 @@ fn mega_30k_0361_world_weather_sleep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0362_world_weather_waypoint() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -24184,7 +24185,7 @@ fn mega_30k_0362_world_weather_waypoint() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0363_world_weather_raid() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -24250,7 +24251,7 @@ fn mega_30k_0363_world_weather_raid() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0364_world_weather_portal() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -24316,7 +24317,7 @@ fn mega_30k_0364_world_weather_portal() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0365_commands_datapack_command() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -24382,7 +24383,7 @@ fn mega_30k_0365_commands_datapack_command() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0366_commands_datapack_datapack() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -24448,7 +24449,7 @@ fn mega_30k_0366_commands_datapack_datapack() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0367_commands_datapack_function() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -24514,7 +24515,7 @@ fn mega_30k_0367_commands_datapack_function() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0368_commands_datapack_loot_table() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -24580,7 +24581,7 @@ fn mega_30k_0368_commands_datapack_loot_table() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0369_commands_datapack_advancement() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -24646,7 +24647,7 @@ fn mega_30k_0369_commands_datapack_advancement() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0370_commands_datapack_command() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -24712,7 +24713,7 @@ fn mega_30k_0370_commands_datapack_command() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0371_commands_datapack_datapack() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -24778,7 +24779,7 @@ fn mega_30k_0371_commands_datapack_datapack() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0372_commands_datapack_function() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -24844,7 +24845,7 @@ fn mega_30k_0372_commands_datapack_function() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0373_commands_datapack_loot_table() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -24910,7 +24911,7 @@ fn mega_30k_0373_commands_datapack_loot_table() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0374_commands_datapack_advancement() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -24976,7 +24977,7 @@ fn mega_30k_0374_commands_datapack_advancement() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0375_commands_datapack_command() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -25042,7 +25043,7 @@ fn mega_30k_0375_commands_datapack_command() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0376_commands_datapack_datapack() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -25108,7 +25109,7 @@ fn mega_30k_0376_commands_datapack_datapack() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0377_commands_datapack_function() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -25174,7 +25175,7 @@ fn mega_30k_0377_commands_datapack_function() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0378_commands_datapack_loot_table() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -25240,7 +25241,7 @@ fn mega_30k_0378_commands_datapack_loot_table() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0379_commands_datapack_advancement() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -25306,7 +25307,7 @@ fn mega_30k_0379_commands_datapack_advancement() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0380_commands_datapack_command() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -25372,7 +25373,7 @@ fn mega_30k_0380_commands_datapack_command() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0381_commands_datapack_datapack() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -25438,7 +25439,7 @@ fn mega_30k_0381_commands_datapack_datapack() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0382_commands_datapack_function() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -25504,7 +25505,7 @@ fn mega_30k_0382_commands_datapack_function() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0383_commands_datapack_loot_table() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -25570,7 +25571,7 @@ fn mega_30k_0383_commands_datapack_loot_table() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0384_commands_datapack_advancement() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -25636,7 +25637,7 @@ fn mega_30k_0384_commands_datapack_advancement() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0385_commands_datapack_command() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -25702,7 +25703,7 @@ fn mega_30k_0385_commands_datapack_command() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0386_commands_datapack_datapack() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -25768,7 +25769,7 @@ fn mega_30k_0386_commands_datapack_datapack() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0387_commands_datapack_function() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -25834,7 +25835,7 @@ fn mega_30k_0387_commands_datapack_function() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0388_commands_datapack_loot_table() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -25900,7 +25901,7 @@ fn mega_30k_0388_commands_datapack_loot_table() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0389_commands_datapack_advancement() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -25966,7 +25967,7 @@ fn mega_30k_0389_commands_datapack_advancement() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0390_inventory_recipes_inventory() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -26032,7 +26033,7 @@ fn mega_30k_0390_inventory_recipes_inventory() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0391_inventory_recipes_recipe() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -26098,7 +26099,7 @@ fn mega_30k_0391_inventory_recipes_recipe() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0392_inventory_recipes_crafting() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -26164,7 +26165,7 @@ fn mega_30k_0392_inventory_recipes_crafting() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0393_inventory_recipes_smelting() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -26230,7 +26231,7 @@ fn mega_30k_0393_inventory_recipes_smelting() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0394_inventory_recipes_smithing() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -26296,7 +26297,7 @@ fn mega_30k_0394_inventory_recipes_smithing() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0395_inventory_recipes_stonecutting() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -26362,7 +26363,7 @@ fn mega_30k_0395_inventory_recipes_stonecutting() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0396_inventory_recipes_inventory() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -26428,7 +26429,7 @@ fn mega_30k_0396_inventory_recipes_inventory() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0397_inventory_recipes_recipe() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -26494,7 +26495,7 @@ fn mega_30k_0397_inventory_recipes_recipe() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0398_inventory_recipes_crafting() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -26560,7 +26561,7 @@ fn mega_30k_0398_inventory_recipes_crafting() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0399_inventory_recipes_smelting() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -26626,7 +26627,7 @@ fn mega_30k_0399_inventory_recipes_smelting() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0400_inventory_recipes_smithing() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -26692,7 +26693,7 @@ fn mega_30k_0400_inventory_recipes_smithing() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0401_inventory_recipes_stonecutting() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -26758,7 +26759,7 @@ fn mega_30k_0401_inventory_recipes_stonecutting() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0402_inventory_recipes_inventory() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -26824,7 +26825,7 @@ fn mega_30k_0402_inventory_recipes_inventory() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0403_inventory_recipes_recipe() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -26890,7 +26891,7 @@ fn mega_30k_0403_inventory_recipes_recipe() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0404_inventory_recipes_crafting() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -26956,7 +26957,7 @@ fn mega_30k_0404_inventory_recipes_crafting() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0405_inventory_recipes_smelting() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -27022,7 +27023,7 @@ fn mega_30k_0405_inventory_recipes_smelting() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0406_inventory_recipes_smithing() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -27088,7 +27089,7 @@ fn mega_30k_0406_inventory_recipes_smithing() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0407_inventory_recipes_stonecutting() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -27154,7 +27155,7 @@ fn mega_30k_0407_inventory_recipes_stonecutting() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0408_inventory_recipes_inventory() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -27220,7 +27221,7 @@ fn mega_30k_0408_inventory_recipes_inventory() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0409_inventory_recipes_recipe() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -27286,7 +27287,7 @@ fn mega_30k_0409_inventory_recipes_recipe() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0410_inventory_recipes_crafting() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -27352,7 +27353,7 @@ fn mega_30k_0410_inventory_recipes_crafting() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0411_inventory_recipes_smelting() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -27418,7 +27419,7 @@ fn mega_30k_0411_inventory_recipes_smelting() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0412_inventory_recipes_smithing() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -27484,7 +27485,7 @@ fn mega_30k_0412_inventory_recipes_smithing() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0413_inventory_recipes_stonecutting() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -27550,7 +27551,7 @@ fn mega_30k_0413_inventory_recipes_stonecutting() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0414_inventory_recipes_inventory() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -27616,7 +27617,7 @@ fn mega_30k_0414_inventory_recipes_inventory() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0415_physics_collision_physics() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -27682,7 +27683,7 @@ fn mega_30k_0415_physics_collision_physics() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0416_physics_collision_collision() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -27748,7 +27749,7 @@ fn mega_30k_0416_physics_collision_collision() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0417_physics_collision_raycast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -27814,7 +27815,7 @@ fn mega_30k_0417_physics_collision_raycast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0418_physics_collision_explosion() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -27880,7 +27881,7 @@ fn mega_30k_0418_physics_collision_explosion() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0419_physics_collision_sculk_vibration() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -27946,7 +27947,7 @@ fn mega_30k_0419_physics_collision_sculk_vibration() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0420_physics_collision_physics() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -28012,7 +28013,7 @@ fn mega_30k_0420_physics_collision_physics() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0421_physics_collision_collision() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -28078,7 +28079,7 @@ fn mega_30k_0421_physics_collision_collision() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0422_physics_collision_raycast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -28144,7 +28145,7 @@ fn mega_30k_0422_physics_collision_raycast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0423_physics_collision_explosion() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -28210,7 +28211,7 @@ fn mega_30k_0423_physics_collision_explosion() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0424_physics_collision_sculk_vibration() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -28276,7 +28277,7 @@ fn mega_30k_0424_physics_collision_sculk_vibration() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0425_physics_collision_physics() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -28342,7 +28343,7 @@ fn mega_30k_0425_physics_collision_physics() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0426_physics_collision_collision() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -28408,7 +28409,7 @@ fn mega_30k_0426_physics_collision_collision() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0427_physics_collision_raycast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -28474,7 +28475,7 @@ fn mega_30k_0427_physics_collision_raycast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0428_physics_collision_explosion() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -28540,7 +28541,7 @@ fn mega_30k_0428_physics_collision_explosion() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0429_physics_collision_sculk_vibration() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -28606,7 +28607,7 @@ fn mega_30k_0429_physics_collision_sculk_vibration() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0430_physics_collision_physics() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -28672,7 +28673,7 @@ fn mega_30k_0430_physics_collision_physics() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0431_physics_collision_collision() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -28738,7 +28739,7 @@ fn mega_30k_0431_physics_collision_collision() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0432_physics_collision_raycast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -28804,7 +28805,7 @@ fn mega_30k_0432_physics_collision_raycast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0433_physics_collision_explosion() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -28870,7 +28871,7 @@ fn mega_30k_0433_physics_collision_explosion() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0434_physics_collision_sculk_vibration() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -28936,7 +28937,7 @@ fn mega_30k_0434_physics_collision_sculk_vibration() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0435_scoreboard_teams_scoreboard() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -29002,7 +29003,7 @@ fn mega_30k_0435_scoreboard_teams_scoreboard() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0436_scoreboard_teams_team() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -29068,7 +29069,7 @@ fn mega_30k_0436_scoreboard_teams_team() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0437_scoreboard_teams_bossbar() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -29134,7 +29135,7 @@ fn mega_30k_0437_scoreboard_teams_bossbar() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0438_scoreboard_teams_trigger() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -29200,7 +29201,7 @@ fn mega_30k_0438_scoreboard_teams_trigger() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0439_scoreboard_teams_stopwatch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -29266,7 +29267,7 @@ fn mega_30k_0439_scoreboard_teams_stopwatch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0440_scoreboard_teams_scoreboard() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -29332,7 +29333,7 @@ fn mega_30k_0440_scoreboard_teams_scoreboard() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0441_scoreboard_teams_team() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -29398,7 +29399,7 @@ fn mega_30k_0441_scoreboard_teams_team() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0442_scoreboard_teams_bossbar() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -29464,7 +29465,7 @@ fn mega_30k_0442_scoreboard_teams_bossbar() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0443_scoreboard_teams_trigger() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -29530,7 +29531,7 @@ fn mega_30k_0443_scoreboard_teams_trigger() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0444_scoreboard_teams_stopwatch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -29596,7 +29597,7 @@ fn mega_30k_0444_scoreboard_teams_stopwatch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0445_scoreboard_teams_scoreboard() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -29662,7 +29663,7 @@ fn mega_30k_0445_scoreboard_teams_scoreboard() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0446_scoreboard_teams_team() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -29728,7 +29729,7 @@ fn mega_30k_0446_scoreboard_teams_team() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0447_scoreboard_teams_bossbar() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -29794,7 +29795,7 @@ fn mega_30k_0447_scoreboard_teams_bossbar() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0448_scoreboard_teams_trigger() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -29860,7 +29861,7 @@ fn mega_30k_0448_scoreboard_teams_trigger() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0449_scoreboard_teams_stopwatch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -29926,7 +29927,7 @@ fn mega_30k_0449_scoreboard_teams_stopwatch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0450_scoreboard_teams_scoreboard() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -29992,7 +29993,7 @@ fn mega_30k_0450_scoreboard_teams_scoreboard() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0451_scoreboard_teams_team() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -30058,7 +30059,7 @@ fn mega_30k_0451_scoreboard_teams_team() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0452_scoreboard_teams_bossbar() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -30124,7 +30125,7 @@ fn mega_30k_0452_scoreboard_teams_bossbar() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0453_scoreboard_teams_trigger() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -30190,7 +30191,7 @@ fn mega_30k_0453_scoreboard_teams_trigger() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0454_scoreboard_teams_stopwatch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -30256,7 +30257,7 @@ fn mega_30k_0454_scoreboard_teams_stopwatch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0455_enchantments_effects_enchantment() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -30322,7 +30323,7 @@ fn mega_30k_0455_enchantments_effects_enchantment() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0456_enchantments_effects_mob_effect() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -30388,7 +30389,7 @@ fn mega_30k_0456_enchantments_effects_mob_effect() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0457_enchantments_effects_potion() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -30454,7 +30455,7 @@ fn mega_30k_0457_enchantments_effects_potion() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0458_enchantments_effects_consume_effect() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -30520,7 +30521,7 @@ fn mega_30k_0458_enchantments_effects_consume_effect() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0459_enchantments_effects_enchantment() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -30586,7 +30587,7 @@ fn mega_30k_0459_enchantments_effects_enchantment() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0460_enchantments_effects_mob_effect() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -30652,7 +30653,7 @@ fn mega_30k_0460_enchantments_effects_mob_effect() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0461_enchantments_effects_potion() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -30718,7 +30719,7 @@ fn mega_30k_0461_enchantments_effects_potion() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0462_enchantments_effects_consume_effect() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -30784,7 +30785,7 @@ fn mega_30k_0462_enchantments_effects_consume_effect() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0463_enchantments_effects_enchantment() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -30850,7 +30851,7 @@ fn mega_30k_0463_enchantments_effects_enchantment() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0464_enchantments_effects_mob_effect() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -30916,7 +30917,7 @@ fn mega_30k_0464_enchantments_effects_mob_effect() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0465_enchantments_effects_potion() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -30982,7 +30983,7 @@ fn mega_30k_0465_enchantments_effects_potion() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0466_enchantments_effects_consume_effect() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -31048,7 +31049,7 @@ fn mega_30k_0466_enchantments_effects_consume_effect() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0467_enchantments_effects_enchantment() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -31114,7 +31115,7 @@ fn mega_30k_0467_enchantments_effects_enchantment() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0468_enchantments_effects_mob_effect() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -31180,7 +31181,7 @@ fn mega_30k_0468_enchantments_effects_mob_effect() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0469_enchantments_effects_potion() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -31246,7 +31247,7 @@ fn mega_30k_0469_enchantments_effects_potion() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0470_enchantments_effects_consume_effect() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -31312,7 +31313,7 @@ fn mega_30k_0470_enchantments_effects_consume_effect() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0471_enchantments_effects_enchantment() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -31378,7 +31379,7 @@ fn mega_30k_0471_enchantments_effects_enchantment() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0472_enchantments_effects_mob_effect() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -31444,7 +31445,7 @@ fn mega_30k_0472_enchantments_effects_mob_effect() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0473_enchantments_effects_potion() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -31510,7 +31511,7 @@ fn mega_30k_0473_enchantments_effects_potion() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0474_enchantments_effects_consume_effect() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -31576,7 +31577,7 @@ fn mega_30k_0474_enchantments_effects_consume_effect() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0475_worldgen_biomes_biome() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -31642,7 +31643,7 @@ fn mega_30k_0475_worldgen_biomes_biome() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0476_worldgen_biomes_noise() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -31708,7 +31709,7 @@ fn mega_30k_0476_worldgen_biomes_noise() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0477_worldgen_biomes_density() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -31774,7 +31775,7 @@ fn mega_30k_0477_worldgen_biomes_density() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0478_worldgen_biomes_carver() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -31840,7 +31841,7 @@ fn mega_30k_0478_worldgen_biomes_carver() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0479_worldgen_biomes_feature() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -31906,7 +31907,7 @@ fn mega_30k_0479_worldgen_biomes_feature() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0480_worldgen_biomes_structure() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -31972,7 +31973,7 @@ fn mega_30k_0480_worldgen_biomes_structure() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0481_worldgen_biomes_biome() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -32038,7 +32039,7 @@ fn mega_30k_0481_worldgen_biomes_biome() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0482_worldgen_biomes_noise() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -32104,7 +32105,7 @@ fn mega_30k_0482_worldgen_biomes_noise() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0483_worldgen_biomes_density() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -32170,7 +32171,7 @@ fn mega_30k_0483_worldgen_biomes_density() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0484_worldgen_biomes_carver() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -32236,7 +32237,7 @@ fn mega_30k_0484_worldgen_biomes_carver() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0485_worldgen_biomes_feature() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -32302,7 +32303,7 @@ fn mega_30k_0485_worldgen_biomes_feature() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0486_worldgen_biomes_structure() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -32368,7 +32369,7 @@ fn mega_30k_0486_worldgen_biomes_structure() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0487_worldgen_biomes_biome() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -32434,7 +32435,7 @@ fn mega_30k_0487_worldgen_biomes_biome() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0488_worldgen_biomes_noise() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -32500,7 +32501,7 @@ fn mega_30k_0488_worldgen_biomes_noise() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0489_worldgen_biomes_density() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -32566,7 +32567,7 @@ fn mega_30k_0489_worldgen_biomes_density() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0490_worldgen_biomes_carver() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -32632,7 +32633,7 @@ fn mega_30k_0490_worldgen_biomes_carver() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0491_worldgen_biomes_feature() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -32698,7 +32699,7 @@ fn mega_30k_0491_worldgen_biomes_feature() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0492_worldgen_biomes_structure() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -32764,7 +32765,7 @@ fn mega_30k_0492_worldgen_biomes_structure() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0493_worldgen_biomes_biome() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -32830,7 +32831,7 @@ fn mega_30k_0493_worldgen_biomes_biome() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0494_worldgen_biomes_noise() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -32896,7 +32897,7 @@ fn mega_30k_0494_worldgen_biomes_noise() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0495_worldgen_biomes_density() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -32962,7 +32963,7 @@ fn mega_30k_0495_worldgen_biomes_density() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0496_worldgen_biomes_carver() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -33028,7 +33029,7 @@ fn mega_30k_0496_worldgen_biomes_carver() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0497_worldgen_biomes_feature() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -33094,7 +33095,7 @@ fn mega_30k_0497_worldgen_biomes_feature() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0498_worldgen_biomes_structure() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -33160,7 +33161,7 @@ fn mega_30k_0498_worldgen_biomes_structure() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0499_worldgen_biomes_biome() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -33226,7 +33227,7 @@ fn mega_30k_0499_worldgen_biomes_biome() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0500_portal_dimension_portal() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -33292,7 +33293,7 @@ fn mega_30k_0500_portal_dimension_portal() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0501_portal_dimension_dimension() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -33358,7 +33359,7 @@ fn mega_30k_0501_portal_dimension_dimension() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0502_portal_dimension_respawn_anchor() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -33424,7 +33425,7 @@ fn mega_30k_0502_portal_dimension_respawn_anchor() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0503_portal_dimension_end_gateway() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -33490,7 +33491,7 @@ fn mega_30k_0503_portal_dimension_end_gateway() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0504_portal_dimension_portal() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -33556,7 +33557,7 @@ fn mega_30k_0504_portal_dimension_portal() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0505_portal_dimension_dimension() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -33622,7 +33623,7 @@ fn mega_30k_0505_portal_dimension_dimension() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0506_portal_dimension_respawn_anchor() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -33688,7 +33689,7 @@ fn mega_30k_0506_portal_dimension_respawn_anchor() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0507_portal_dimension_end_gateway() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -33754,7 +33755,7 @@ fn mega_30k_0507_portal_dimension_end_gateway() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0508_portal_dimension_portal() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -33820,7 +33821,7 @@ fn mega_30k_0508_portal_dimension_portal() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0509_portal_dimension_dimension() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -33886,7 +33887,7 @@ fn mega_30k_0509_portal_dimension_dimension() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0510_portal_dimension_respawn_anchor() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -33952,7 +33953,7 @@ fn mega_30k_0510_portal_dimension_respawn_anchor() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0511_portal_dimension_end_gateway() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -34018,7 +34019,7 @@ fn mega_30k_0511_portal_dimension_end_gateway() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0512_portal_dimension_portal() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -34084,7 +34085,7 @@ fn mega_30k_0512_portal_dimension_portal() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0513_portal_dimension_dimension() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -34150,7 +34151,7 @@ fn mega_30k_0513_portal_dimension_dimension() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0514_portal_dimension_respawn_anchor() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -34216,7 +34217,7 @@ fn mega_30k_0514_portal_dimension_respawn_anchor() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0515_portal_dimension_end_gateway() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -34282,7 +34283,7 @@ fn mega_30k_0515_portal_dimension_end_gateway() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0516_portal_dimension_portal() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -34348,7 +34349,7 @@ fn mega_30k_0516_portal_dimension_portal() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0517_portal_dimension_dimension() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -34414,7 +34415,7 @@ fn mega_30k_0517_portal_dimension_dimension() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0518_portal_dimension_respawn_anchor() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -34480,7 +34481,7 @@ fn mega_30k_0518_portal_dimension_respawn_anchor() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "30k mega coverage deterministic")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_0519_portal_dimension_end_gateway() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150, "blocks");
@@ -34546,7 +34547,7 @@ fn mega_30k_0519_portal_dimension_end_gateway() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "final 30k invariants")]
+#[allow(clippy::too_many_lines)]
 fn mega_30k_final_invariants() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
