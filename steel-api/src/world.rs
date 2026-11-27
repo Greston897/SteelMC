@@ -3,6 +3,7 @@
 use glam::DVec3;
 use steel_utils::{BlockPos, BlockStateId, ChunkPos, Identifier};
 use steel_registry::blocks::BlockRef;
+use steel_registry::blocks::block_state_ext::BlockStateExt;
 
 /// Лёгкий `WorldRef` — идентификатор мира.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

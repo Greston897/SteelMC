@@ -2,6 +2,7 @@
 
 use steel_utils::{BlockPos, BlockStateId, Identifier};
 use steel_registry::blocks::BlockRef;
+use steel_registry::blocks::block_state_ext::BlockStateExt;
 
 /// Лёгкая обёртка над блоком в мире.
 #[derive(Debug, Clone, Copy)]
