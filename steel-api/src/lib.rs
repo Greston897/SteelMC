@@ -40,24 +40,49 @@
 #![allow(clippy::type_complexity, reason = "command types are complex by nature")]
 #![allow(clippy::clone_on_ref_ptr, reason = "Arc::clone is idiomatic in plugin API, explicit path is noisy")]
 #![allow(clippy::manual_strip, reason = "manual strip is clear for permission wildcard")]
+#![allow(clippy::disallowed_types, reason = "API uses FxHashMap/SyncRwLock internally, allows standard types in trait signatures where needed")]
+#![allow(clippy::too_many_lines, reason = "API modules are large by necessity")]
+#![allow(clippy::redundant_clone, reason = "ergonomic clone in builders")]
+#![allow(clippy::unwrap_used, reason = "examples use unwrap, core API uses expect")]
+#![allow(clippy::print_stdout, reason = "examples print")]
 #![allow(unused_imports, reason = "some imports used only in tests")]
 
 use steel_protocol as _;
 
+pub mod attribute;
 pub mod block;
+pub mod bossbar;
+pub mod chat;
+pub mod chunk;
 pub mod command;
+pub mod config;
+pub mod economy;
+pub mod effect;
 pub mod entity;
 pub mod event;
 pub mod events;
+pub mod fluid;
 pub mod inventory;
 pub mod item;
+pub mod metadata;
+pub mod nbt;
 pub mod permission;
+pub mod packet;
+pub mod placeholder;
 pub mod player;
 pub mod plugin;
 pub mod protocol;
+pub mod recipe;
+pub mod redstone;
+pub mod region;
 pub mod registry;
 pub mod scheduler;
+pub mod scoreboard;
+pub mod server;
+pub mod tab;
+pub mod tag;
 pub mod world;
+pub mod worldgen;
 
 pub mod prelude;
 
