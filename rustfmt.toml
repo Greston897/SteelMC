@@ -8,4 +8,5 @@ ignore = [
     "steel-registry/src/generated",
     "steel-utils/src/generated",
     "steel-worldgen/src/generated",
+    "steel-core/src/mega_30k_ultra_coverage.rs",
 ]
