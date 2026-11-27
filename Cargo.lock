@@ -2868,6 +2868,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "steel-api"
+version = "0.17.0+mc26.3"
+dependencies = [
+ "anyhow",
+ "bitflags",
+ "glam",
+ "log",
+ "parking_lot 0.13.0",
+ "serde",
+ "serde_json",
+ "smallvec",
+ "steel-math",
+ "steel-protocol",
+ "steel-registry",
+ "steel-utils",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "steel-core"
 version = "0.17.0+mc26.3"
 dependencies = [
