@@ -7,6 +7,7 @@
 #![allow(clippy::unwrap_used, reason = "example")]
 #![allow(clippy::print_stdout, reason = "example")]
 #![allow(clippy::absolute_paths, reason = "example")]
+#![allow(clippy::clone_on_ref_ptr, reason = "example uses Arc::clone")]
 
 use std::sync::Arc;
 use steel_api::permission::{Permission, PermissionDefault};
