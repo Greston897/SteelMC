@@ -135,8 +135,15 @@ impl Chunk {
             level,
             block_entities: BlockEntityStorage::new(),
             entities: EntityStorage::new(),
-            structure_starts: SyncRwLock::new(FxHashMap::default()),
-            structure_references: SyncRwLock::new(FxHashMap::default()),
+            // MSPT имба: резерв 4 структуры на чанк — 0 realloc на генерации
+            structure_starts: SyncRwLock::new(FxHashMap::with_capacity_and_hasher(
+                4,
+                rustc_hash::FxBuildHasher,
+            )),
+            structure_references: SyncRwLock::new(FxHashMap::with_capacity_and_hasher(
+                4,
+                rustc_hash::FxBuildHasher,
+            )),
             postprocessing: SyncMutex::new(empty_postprocessing(height)),
             scheduled_ticks: Arc::new(ChunkTickContainer::new_proto(ChunkTickLists::new(
                 BlockTickList::new_pending(),

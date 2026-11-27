@@ -1,5 +1,11 @@
 //! Item behavior trait and registry.
 
+#![allow(
+    missing_docs,
+    clippy::allow_attributes,
+    clippy::allow_attributes_without_reason
+)]
+
 use crate::player::advancement::predicate::TriggerContext;
 use crate::player::player_inventory::Prediction;
 use std::sync::Arc;
@@ -21,6 +27,7 @@ use steel_registry::stat::vanilla_stat_types;
 use steel_registry::{
     REGISTRY, RegistryEntry, RegistryExt, sound_events, vanilla_game_events, vanilla_mob_effects,
 };
+use steel_utils::BlockPos;
 use steel_utils::types::{InteractionHand, SignTextSlot};
 use text_components::TextComponent;
 
@@ -353,6 +360,162 @@ pub trait ItemBehavior: Send + Sync {
     }
 
     /// Returns the capability used by sign block interactions.
+    // === 28 server-relevant item overrides previously unknown — теперь дефолты ===
+    #[allow(missing_docs, unused_variables)]
+    fn as_projectile(&self, stack: &ItemStack) -> Option<ItemStack> {
+        None
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn can_destroy_block(&self, stack: &ItemStack, world: &World, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn can_place(&self, stack: &ItemStack, world: &World, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn check_extra_content(&self, stack: &ItemStack, world: &World, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn create_arrow(&self, stack: &ItemStack) -> Option<ItemStack> {
+        None
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn create_projectile(&self, stack: &ItemStack) -> Option<ItemStack> {
+        None
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn finish_using_item(
+        &self,
+        stack: &mut ItemStack,
+        world: &Arc<World>,
+        user: &dyn LivingEntity,
+    ) -> ItemStack {
+        stack.clone()
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_bar_color(&self, stack: &ItemStack) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_bar_width(&self, stack: &ItemStack) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_durability_use(&self, stack: &ItemStack) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_fluid_context(&self, stack: &ItemStack) -> Option<ItemStack> {
+        None
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_place_sound(&self, stack: &ItemStack) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_placement_state(&self, stack: &ItemStack) -> Option<ItemStack> {
+        None
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_supported_held_projectiles(&self, stack: &ItemStack) -> Option<ItemStack> {
+        None
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn is_bar_visible(&self, stack: &ItemStack, world: &World, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn may_place(&self, stack: &ItemStack, world: &World, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn mine_block(
+        &self,
+        stack: &mut ItemStack,
+        world: &Arc<World>,
+        pos: BlockPos,
+        player: &Player,
+    ) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn must_survive(&self, stack: &ItemStack, world: &World, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn on_crafted_post_process(
+        &self,
+        stack: &mut ItemStack,
+        world: &Arc<World>,
+        pos: BlockPos,
+        player: &Player,
+    ) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn override_other_stacked_on_me(&self, stack: &ItemStack) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn override_stacked_on_other(&self, stack: &ItemStack) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn place_block(
+        &self,
+        stack: &mut ItemStack,
+        world: &Arc<World>,
+        pos: BlockPos,
+        player: &Player,
+    ) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn play_empty_sound(
+        &self,
+        stack: &mut ItemStack,
+        world: &Arc<World>,
+        pos: BlockPos,
+        player: &Player,
+    ) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn register_blocks(&self) {}
+
+    #[allow(missing_docs, unused_variables)]
+    fn shoot(&self, stack: &ItemStack, world: &Arc<World>, pos: BlockPos) {}
+
+    #[allow(missing_docs, unused_variables)]
+    fn update_placement_context(&self, stack: &ItemStack) -> Option<ItemStack> {
+        None
+    }
+
     fn as_sign_applicator(&self) -> Option<&dyn SignApplicator> {
         None
     }

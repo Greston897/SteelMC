@@ -3,6 +3,7 @@
 use std::sync::Arc;
 
 use arc_swap::ArcSwap;
+use rustc_hash::FxBuildHasher;
 use scc::HashMap;
 use steel_utils::locks::SyncMutex;
 use uuid::Uuid;
@@ -55,9 +56,9 @@ impl PlayerSlot {
 /// UUID and entity ID lookups as one operation.
 pub struct PlayerMap {
     /// Primary index by UUID (persistent identifier)
-    by_uuid: HashMap<Uuid, Arc<PlayerSlot>>,
+    by_uuid: HashMap<Uuid, Arc<PlayerSlot>, FxBuildHasher>,
     /// Secondary index by entity ID (session-local identifier)
-    by_entity_id: HashMap<i32, Arc<PlayerSlot>>,
+    by_entity_id: HashMap<i32, Arc<PlayerSlot>, FxBuildHasher>,
     /// Player UUIDs in insertion order for vanilla-visible iteration.
     order: SyncMutex<Vec<Uuid>>,
     /// Serializes changes to the indexes and their shared slots.
@@ -75,8 +76,8 @@ impl PlayerMap {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            by_uuid: HashMap::new(),
-            by_entity_id: HashMap::new(),
+            by_uuid: HashMap::with_capacity_and_hasher(8, FxBuildHasher),
+            by_entity_id: HashMap::with_capacity_and_hasher(8, FxBuildHasher),
             order: SyncMutex::new(Vec::new()),
             mutations: SyncMutex::new(()),
         }

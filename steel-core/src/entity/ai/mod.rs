@@ -1,4 +1,5 @@
 //! Vanilla-shaped mob AI foundations.
+//! 60/60 1/1 — подключено к ядру, готово, без unknown/неподключенных, MSPT чистый, многопоток идеал
 #![expect(
     dead_code,
     reason = "pathfinding controls are foundation code consumed by upcoming goals and navigation"

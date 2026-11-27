@@ -1,7 +1,7 @@
 //! Boss mob implementations.
 
 pub mod ender_dragon;
-mod wither_boss;
+pub mod wither_boss;
 
 pub use ender_dragon::EnderDragonEntity;
 pub use ender_dragon::part::{

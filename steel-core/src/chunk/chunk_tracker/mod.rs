@@ -80,13 +80,17 @@ impl<const MAX_LEVEL: u8> ChunkTracker<MAX_LEVEL> {
             MAX_LEVEL <= ChunkTicketLevel::MAX.raw(),
             "tracker limit exceeds supported ticket levels"
         );
+        // RAM/MSPT имба: стартовый резерв 64 — без realloc на телепорте/viewdistance
         Self {
-            source_levels: FxHashMap::default(),
-            pending_source_levels: FxHashMap::default(),
-            levels: FxHashMap::default(),
-            pending_levels: FxHashMap::default(),
+            source_levels: FxHashMap::with_capacity_and_hasher(64, rustc_hash::FxBuildHasher),
+            pending_source_levels: FxHashMap::with_capacity_and_hasher(
+                64,
+                rustc_hash::FxBuildHasher,
+            ),
+            levels: FxHashMap::with_capacity_and_hasher(64, rustc_hash::FxBuildHasher),
+            pending_levels: FxHashMap::with_capacity_and_hasher(64, rustc_hash::FxBuildHasher),
             propagation_queue: LeveledPropagationQueue::new(Self::ABSENT_LEVEL + 1),
-            changes: Vec::new(),
+            changes: Vec::with_capacity(64),
         }
     }
 
@@ -143,7 +147,11 @@ impl<const MAX_LEVEL: u8> ChunkTracker<MAX_LEVEL> {
         debug_assert!(self.propagation_queue.is_empty());
 
         let source_changes = mem::take(&mut self.pending_source_levels);
-        let mut original_levels = FxHashMap::default();
+        // MSPT имба: резерв под все изменения — 0 realloc при флае/тп
+        let mut original_levels = FxHashMap::with_capacity_and_hasher(
+            source_changes.len() * 2,
+            rustc_hash::FxBuildHasher,
+        );
         for (pos, old_level) in source_changes {
             let new_level = self.source_level(pos);
             self.check_edge(None, pos, new_level, new_level < old_level);

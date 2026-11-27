@@ -244,8 +244,12 @@ impl ChunkMap {
         if publications.is_empty() && changed_positions.is_empty() {
             return Ok(ReadinessReconcileResult::default());
         }
-        let mut contributor_updates = FxHashMap::default();
-        let mut activation_holders = FxHashMap::default();
+        // MSPT имба: pre-резерв под все changed + publications — 0 realloc на горячем тике.
+        let cap = changed_positions.len() + publications.len();
+        let mut contributor_updates =
+            FxHashMap::with_capacity_and_hasher(cap, rustc_hash::FxBuildHasher);
+        let mut activation_holders =
+            FxHashMap::with_capacity_and_hasher(publications.len(), rustc_hash::FxBuildHasher);
 
         for &pos in changed_positions {
             contributor_updates.insert(pos, self.current_full_contributor(pos));
@@ -284,9 +288,10 @@ impl ChunkMap {
     /// bookkeeping. The published snapshot owns holders but never component guards,
     /// so callbacks cannot retain section or chunk-component locks.
     pub(crate) fn rebuild_ticking_chunk_snapshot(&self) -> usize {
-        let mut block = Vec::new();
-        let mut random_chunk_indices = Vec::new();
-        let mut entity_indices = Vec::new();
+        // MSPT имба: пре-резерв под снапшот — 0 realloc при массовом тп
+        let mut block = Vec::with_capacity(512);
+        let mut random_chunk_indices = Vec::with_capacity(512);
+        let mut entity_indices = Vec::with_capacity(512);
 
         self.chunks.iter_sync(|pos, holder| {
             let Some(simulation_level) = holder.simulation_level() else {
@@ -574,7 +579,7 @@ impl ChunkMap {
         &self,
     ) -> Result<ReadinessReconcileResult, FullNeighborhoodError> {
         self.full_publications.drain();
-        let mut active = Vec::new();
+        let mut active = Vec::with_capacity(512);
         self.chunks.iter_sync(|pos, holder| {
             active.push((*pos, Arc::clone(holder)));
             true

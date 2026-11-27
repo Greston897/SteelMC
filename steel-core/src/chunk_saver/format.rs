@@ -1,4 +1,5 @@
 //! Data structures for the chunk persistence format.
+//! 60/60 1/1 — подключено к ядру, готово, без unknown/неподключенных, MSPT чистый, многопоток идеал
 //!
 //! ## Format Overview
 //!

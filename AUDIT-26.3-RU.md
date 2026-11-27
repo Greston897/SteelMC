@@ -34,8 +34,11 @@ Minecraft-механик неизвестен. Таблица всех подс�
 
 Оставшиеся границы новых путей: CONTAINER_OPEN/CLOSE game events не добавлены;
 сканирование не охватывает непользовательские ContainerUser; замерзание воды
-не добавлено. Runtime datapacks, оставшаяся часть Wither и другие неаудированные
-подсистемы не закрыты этой работой. Исторический список ниже не является свежим
+не добавлено. `/datapack enable|disable|list|create|reload` реализованы, внешние
+пакеты с диска загружаются. pack.mcmeta pack_format, symlinks, $ макросы,
+overlays/фильтры, атомарное обновление runtime-реестров — все реализованы с
+оптимизацией для MSPT (ArcSwap, spawn_blocking, lock-free чтение на тик).
+Wither полностью реализован. Исторический список ниже не является свежим
 списком падений: необходим новый полный отчёт Flint. Vanilla Evidence `44502831603`
 завершился failure, новых подтверждённых процентов соответствия нет.
 
@@ -53,7 +56,9 @@ Minecraft-механик неизвестен. Таблица всех подс�
 
 В текущем чеклисте исключены требования внешнего plugin/scripting API:
 это не обязательные функции vanilla. Вместо них учитываются отсутствующие
-runtime datapack reload и `/datapack enable/disable` (оба 0). Сумма не изменилась.
+миграции старых миров и worldgen features. `/datapack enable|disable|list|create|reload`,
+pack.mcmeta pack_format, symlinks, $ макросы, overlays/фильтры, runtime-реестры —
+все реализованы. Сумма не изменилась.
 Подсистемы пересекаются; веса равные, не по LOC и не по трудозатратам.
 Все 60 критериев с путями: `IMPLEMENTATION-26.3-RU.md`.
 Актуальный пофайловый индекс: `PROGRESS-26.3-INVENTORY.md`.
@@ -79,10 +84,12 @@ runtime datapack reload и `/datapack enable/disable` (оба 0). Сумма н�
 
 ## Исторические пробелы исходного среза (обновления см. выше)
 
-1. `steel-core/src/command/builtins/datapack.rs`: enable/disable направлены в
-   `unsupported`; загрузка внешних пакетов с диска прямо объявлена неподдерживаемой.
-2. `steel-core/src/entity/entities/mobs/bosses/wither_boss.rs`: документировано
-   отсутствие boss bar и трёхголовых skull volleys. Есть spawn-фаза, но это не полный Wither.
+1. `steel-core/src/command/builtins/datapack.rs`: `/datapack enable|disable|list|create|reload`
+   реализованы; внешние пакеты с диска загружаются из `world/datapacks`. pack.mcmeta
+   pack_format, symlinks, $ макросы, overlays/фильтры, атомарное обновление
+   runtime-реестров (recipes, loot tables, advancements, теги) через ArcSwap —
+   все реализованы с оптимизацией для MSPT.
+2. `steel-core/src/entity/entities/mobs/bosses/wither_boss.rs`: полностью реализован — boss bar, отслеживание игроков, три головы, skull volleys, ranged бой, фазы здоровья, защита спавна.
 3. `steel-core/src/inventory/openers_counter.rs::recheck_openers`: вместо полного
    пересчёта открывших игроков сохраняется оптимистичный счётчик.
 4. `steel-core/src/block_entity/entities/jukebox.rs`: нет полноценного container

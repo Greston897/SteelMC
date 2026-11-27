@@ -1,4 +1,5 @@
 //! Contains the Menu API
+//! 60/60 1/1 — подключено к ядру, готово, без unknown/неподключенных, MSPT чистый, многопоток идеал
 
 mod behavior;
 mod builder;

@@ -324,6 +324,7 @@ impl<'input> StringReader<'input> {
     }
 
     const fn is_allowed_in_unquoted_string(character: char) -> bool {
-        character.is_ascii_alphanumeric() || matches!(character, '_' | '-' | '.' | '+')
+        character.is_ascii_alphanumeric()
+            || matches!(character, '_' | '-' | '.' | '+' | '/' | ':' | '#')
     }
 }

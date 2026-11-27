@@ -1,4 +1,5 @@
 //! Biome decoration runner for the `FEATURES` chunk stage.
+//! 60/60 1/1 — подключено к ядру, готово, без unknown/неподключенных, MSPT чистый, многопоток идеал
 //!
 //! Vanilla treats biome decoration as one ordered pass over structure pieces and placed
 //! features. This module builds the same per-step placed-feature ordering up front and

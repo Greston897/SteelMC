@@ -46,10 +46,11 @@ impl PlayerTicketTracker {
     /// Creates an empty tracker with the current global player distances.
     #[must_use]
     pub(crate) fn new(view_distance: u8, simulation_distance: u8) -> Self {
+        // RAM/MSPT имба: резерв 64 игрока/позиций — без ре-хеша на входе 100 онлайн
         Self {
-            players_by_pos: FxHashMap::default(),
-            player_positions: FxHashMap::default(),
-            loading_coverage: FxHashMap::default(),
+            players_by_pos: FxHashMap::with_capacity_and_hasher(64, rustc_hash::FxBuildHasher),
+            player_positions: FxHashMap::with_capacity_and_hasher(64, rustc_hash::FxBuildHasher),
+            loading_coverage: FxHashMap::with_capacity_and_hasher(256, rustc_hash::FxBuildHasher),
             view_distance,
             simulation_distance,
         }

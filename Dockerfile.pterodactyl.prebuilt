@@ -1,0 +1,15 @@
+# Pterodactyl prebuilt variant — uses host-compiled steel binary instead of cargo build inside Docker
+# Used by CI (release-steel.yml) to avoid recompiling and lld issues; faster and more reliable
+FROM debian:bookworm-slim
+LABEL authors="junkydeveloper"
+LABEL org.opencontainers.image.description="SteelMC - Rust Minecraft server for Pterodactyl (prebuilt x86_64)"
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates tini && rm -rf /var/lib/apt/lists/* && useradd -m -d /home/container container
+# steel binary is produced by `cargo build --release --target x86_64-unknown-linux-gnu` on host (release-steel.yml)
+COPY steel-x86_64-unknown-linux-gnu /home/container/steel
+RUN chmod 755 /home/container/steel
+COPY --chown=container:container package-content /home/container/package-content
+WORKDIR /home/container
+USER container
+EXPOSE 25565 25575
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["/home/container/steel"]

@@ -107,7 +107,8 @@ impl<T: TickKey> TickList<T> {
         Self {
             pending_ticks: None,
             ticks: BinaryHeap::new(),
-            scheduled: FxHashSet::default(),
+            // MSPT имба: резерв 64 тика — без ре-хеша на редстоуне
+            scheduled: FxHashSet::with_capacity_and_hasher(64, rustc_hash::FxBuildHasher),
             next_insertion_order: 0,
         }
     }
@@ -119,7 +120,8 @@ impl<T: TickKey> TickList<T> {
         Self {
             pending_ticks: Some(Vec::new()),
             ticks: BinaryHeap::new(),
-            scheduled: FxHashSet::default(),
+            // MSPT имба: резерв 64 тика — без ре-хеша на редстоуне
+            scheduled: FxHashSet::with_capacity_and_hasher(64, rustc_hash::FxBuildHasher),
             next_insertion_order: 0,
         }
     }

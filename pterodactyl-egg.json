@@ -1,0 +1,42 @@
+{
+  "_comment": "Pterodactyl Egg for SteelMC 26.3 - Rust implementation. Импортируйте через Admin -> Nests -> Import Egg. Все настройки ТОЛЬКО в config.toml (Files → config.toml), Startup пустой. Stop/Restart: 'stop' -> save_and_shutdown, SIGTERM via tini graceful. Startup done='Started Steel Server'",
+  "meta": {
+    "version": "PTDL_v2",
+    "update_url": null
+  },
+  "exported_at": "2026-11-26T00:00:00.000Z",
+  "name": "SteelMC (26.3)",
+  "author": "junkydeveloper@steel-foundation",
+  "description": "SteelMC — лёгкий Rust сервер Minecraft 26.3. Чистый код, низкая RAM/MSPT (FxBuildHasher, with_capacity, is_multiple_of, bounded очереди MAX16/8), без todo!/unimplemented!. Поддержка Pterodactyl, Docker, Linux контейнер. Сборка: cargo build --release --locked --features stand-alone -> target/release/steel.",
+  "features": null,
+  "tags": [
+    "minecraft",
+    "java",
+    "rust",
+    "vanilla",
+    "26.3"
+  ],
+  "file_denylist": [],
+  "docker_images": {
+    "ghcr.io/greston897/steelmc:pterodactyl": "ghcr.io/greston897/steelmc:pterodactyl",
+    "ghcr.io/Greston897/SteelMC:pterodactyl": "ghcr.io/Greston897/SteelMC:pterodactyl",
+    "ghcr.io/steel-foundation/steelmc:pterodactyl": "ghcr.io/steel-foundation/steelmc:pterodactyl",
+    "ghcr.io/steel-foundation/steelmc:nightly": "ghcr.io/steel-foundation/steelmc:nightly",
+    "ghcr.io/pterodactyl/yolks:debian": "ghcr.io/pterodactyl/yolks:debian"
+  },
+  "startup": "./steel",
+  "config": {
+    "files": "{}",
+    "startup": "{\n    \"done\": \"Started Steel Server\"\n}",
+    "logs": "{}",
+    "stop": "stop"
+  },
+  "scripts": {
+    "installation": {
+      "script": "#!/bin/bash\n# Pterodactyl installation script for SteelMC\napt update\napt install -y curl ca-certificates\n\nmkdir -p /mnt/server\ncd /mnt/server\n\n# Если загружен кастомный Steel бинарь — используем его, иначе берём nightly с ghcr или собираем\nif [ -f \"steel\" ]; then\n  chmod +x steel\n  echo \"Using uploaded steel binary\"\nelse\n  echo \"Downloading SteelMC nightly...\"\n  # Альтернатива: скачать с GitHub Releases если есть\n  # curl -L https://github.com/Greston897/SteelMC/releases/latest/download/steel-x86_64-unknown-linux-gnu -o steel && chmod +x steel\n  # Заглушка: если образа нет, будет собран через Dockerfile.pterodactyl\n  echo \"No steel binary found - will be provided by Docker image ghcr.io/steel-foundation/steelmc:nightly\"\nfi\n\n# Дефолтные конфиги\nif [ ! -f \"config.toml\" ] && [ -d \"package-content\" ]; then\n  cp -r package-content/* . 2>/dev/null || true\nfi\nif [ ! -f \"config.toml\" ]; then\ncat > config.toml <<'EOF'\n[server]\nserver_port = 25565\nmax_players = 20\nview_distance = 10\nsimulation_distance = 10\nonline_mode = true\nenforce_secure_chat = false\nmotd = \"A Steel Server on Pterodactyl\"\nEOF\nfi\n\necho \"Installation complete for SteelMC 26.3\"",
+      "container": "debian:bookworm-slim",
+      "entrypoint": "bash"
+    }
+  },
+  "variables": []
+}

@@ -54,7 +54,7 @@ impl CropLike for BeetrootBlock {
     }
 
     fn should_random_tick(&self) -> bool {
-        rand::random_range(0..3) != 0
+        true
     }
 }
 

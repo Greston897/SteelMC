@@ -23,6 +23,8 @@ pub mod inventory;
 pub(crate) mod java_block_pos_set;
 pub mod level_data;
 pub mod loot;
+#[cfg(test)]
+mod mega_30k_ultra_coverage;
 pub mod permission;
 pub mod physics;
 pub mod player;
@@ -35,6 +37,7 @@ pub mod server;
 pub(crate) mod test_support;
 #[cfg(test)]
 mod vanilla_26_3_mega_parity;
+pub mod plugin;
 pub mod world;
 pub mod worldgen;
 

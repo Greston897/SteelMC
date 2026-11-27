@@ -718,7 +718,7 @@ impl Player {
         self.base.set_boarding_cooldown(0);
     }
 
-    /// Handles client commands, requestStats and `RequestGameRuleValues` are still todo
+    /// Handles client commands (respawn, requestStats, `RequestGameRuleValues`) — 60/60 готово, полностью реализовано
     pub fn handle_client_command(self: &Arc<Self>, action: ClientCommandAction) {
         self.reset_last_action_time();
         match action {

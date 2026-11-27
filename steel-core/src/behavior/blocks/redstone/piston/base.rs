@@ -621,7 +621,7 @@ mod tests {
 
     fn tick_block_entities(world: &Arc<World>, ticks: usize) {
         for _ in 0..ticks {
-            world.block_entity_tickers().tick(world, true);
+            world.block_entity_tickers().tick(world, true, false, 0);
         }
     }
 

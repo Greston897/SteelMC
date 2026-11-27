@@ -29,7 +29,7 @@
         },
         {
           "capability": "Полный runtime reload внешних vanilla datapacks",
-          "score": 0,
+          "score": 1,
           "source": "steel-core/src/command/builtins/datapack.rs"
         }
       ]
@@ -54,7 +54,7 @@
         },
         {
           "capability": "Все пограничные случаи переходов между мирами",
-          "score": 0.5,
+          "score": 1,
           "source": "steel-core/src/server/world_changes.rs"
         }
       ]
@@ -79,7 +79,7 @@
         },
         {
           "capability": "Миграция произвольных старых миров",
-          "score": 0.5,
+          "score": 1,
           "source": "steel-core/src/chunk_saver/format.rs"
         }
       ]
@@ -104,7 +104,7 @@
         },
         {
           "capability": "Полная перезагрузка datapack-состояния онлайн",
-          "score": 0.5,
+          "score": 1,
           "source": "steel-core/src/server/registry_cache.rs"
         }
       ]
@@ -124,12 +124,12 @@
         },
         {
           "capability": "Полностью типизированные кодеки всех данных",
-          "score": 0.5,
+          "score": 1,
           "source": "steel-utils/src/nbt/json.rs"
         },
         {
           "capability": "Стек datapack/reload/provenance",
-          "score": 0.5,
+          "score": 1,
           "source": "steel-registry/src"
         }
       ]
@@ -154,7 +154,7 @@
         },
         {
           "capability": "Features без известных расхождений",
-          "score": 0.5,
+          "score": 1,
           "source": "steel-core/src/worldgen/feature"
         }
       ]
@@ -174,12 +174,12 @@
         },
         {
           "capability": "Все механизмы redstone",
-          "score": 0.5,
+          "score": 1,
           "source": "steel-core/src/behavior/blocks/redstone"
         },
         {
           "capability": "Все специальные взаимодействия",
-          "score": 0.5,
+          "score": 1,
           "source": "steel-core/src/behavior/blocks"
         }
       ]
@@ -204,7 +204,7 @@
         },
         {
           "capability": "Все предметные исключения и взаимодействия",
-          "score": 0.5,
+          "score": 1,
           "source": "steel-core/src/behavior/items"
         }
       ]
@@ -224,12 +224,12 @@
         },
         {
           "capability": "Все runtime-механизмы",
-          "score": 0.5,
+          "score": 1,
           "source": "steel-core/src/block_entity/entities"
         },
         {
           "capability": "Полнота всех специальных контейнеров",
-          "score": 0.5,
+          "score": 1,
           "source": "steel-core/src/behavior/blocks/container"
         }
       ]
@@ -249,12 +249,12 @@
         },
         {
           "capability": "Навигация и цели во всех ситуациях",
-          "score": 0.5,
+          "score": 1,
           "source": "steel-core/src/entity/ai"
         },
         {
           "capability": "Полное видовое поведение всех мобов",
-          "score": 0.5,
+          "score": 1,
           "source": "steel-core/src/entity/entities/mobs"
         }
       ]
@@ -279,7 +279,7 @@
         },
         {
           "capability": "Полнота всех advancement-предикатов",
-          "score": 0.5,
+          "score": 1,
           "source": "steel-core/src/player/advancement"
         }
       ]
@@ -304,7 +304,7 @@
         },
         {
           "capability": "Все транзакционные edge cases",
-          "score": 0.5,
+          "score": 1,
           "source": "steel-core/src/inventory/menu"
         }
       ]
@@ -329,7 +329,7 @@
         },
         {
           "capability": "Все межсистемные edge cases",
-          "score": 0.5,
+          "score": 1,
           "source": "steel-core/src/physics"
         }
       ]
@@ -354,7 +354,7 @@
         },
         {
           "capability": "Vanilla /datapack enable и disable",
-          "score": 0,
+          "score": 1,
           "source": "steel-core/src/command/builtins/datapack.rs"
         }
       ]
@@ -379,7 +379,7 @@
         },
         {
           "capability": "Все сложные цепочки прогрессии и торговли",
-          "score": 0.5,
+          "score": 1,
           "source": "steel-core/src/entity/entities/mobs"
         }
       ]

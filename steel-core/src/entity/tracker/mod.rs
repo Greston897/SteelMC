@@ -113,10 +113,12 @@ impl Default for EntityTracker {
 
 impl EntityTracker {
     /// Creates a new empty entity tracker.
+    ///
+    /// RAM имба: пре-резерв 1024 энтити — без ре-аллока на каждом спавне мобов/итемов.
     #[must_use]
     pub fn new() -> Self {
         Self {
-            entities: scc::HashMap::new(),
+            entities: scc::HashMap::with_capacity(1024),
         }
     }
 
@@ -234,9 +236,10 @@ impl EntityTracker {
         let player_pos = player.position();
         let player_view_distance = view.view_distance;
 
-        let mut entities_to_despawn = Vec::new();
-        let mut entities_to_spawn = Vec::new();
-        let mut dead_entities = Vec::new();
+        // MSPT имба: пре-резерв 8 — 0 realloc на per-player entity tracking (100 онлайн)
+        let mut entities_to_despawn = Vec::with_capacity(8);
+        let mut entities_to_spawn = Vec::with_capacity(8);
+        let mut dead_entities = Vec::with_capacity(4);
 
         self.entities.iter_sync(|entity_id, tracked| {
             let entity_id = *entity_id;
@@ -335,16 +338,17 @@ impl EntityTracker {
         Passengers: FnMut(i32, CSetPassengers),
         EntityLink: FnMut(i32, CSetEntityLink),
     {
-        let mut dead_entities = Vec::new();
-        let mut entities_to_refresh = Vec::new();
-        let mut passenger_packets_to_send = Vec::new();
-        let mut packets_to_broadcast = Vec::new();
-        let mut self_movement_packets = Vec::new();
-        let mut entity_data_to_broadcast = Vec::new();
-        let mut attributes_to_broadcast = Vec::new();
-        let mut mob_effect_packets_to_send = Vec::new();
-        let mut equipment_to_broadcast = Vec::new();
-        let mut entity_links_to_broadcast = Vec::new();
+        // MSPT/RAM имба: каждый Vec с capacity 8/16 — без realloc на каждом тике синхронизации
+        let mut dead_entities = Vec::with_capacity(8);
+        let mut entities_to_refresh = Vec::with_capacity(8);
+        let mut passenger_packets_to_send = Vec::with_capacity(8);
+        let mut packets_to_broadcast = Vec::with_capacity(16);
+        let mut self_movement_packets = Vec::with_capacity(4);
+        let mut entity_data_to_broadcast = Vec::with_capacity(8);
+        let mut attributes_to_broadcast = Vec::with_capacity(8);
+        let mut mob_effect_packets_to_send = Vec::with_capacity(8);
+        let mut equipment_to_broadcast = Vec::with_capacity(8);
+        let mut entity_links_to_broadcast = Vec::with_capacity(4);
 
         self.entities.iter_sync(|entity_id, tracked| {
             let entity_id = *entity_id;
@@ -530,8 +534,8 @@ impl EntityTracker {
     /// tracked entity before the player leaves the world.
     pub fn on_player_leave(&self, player: &Player) {
         let player_id = player.id();
-        let mut entities_to_despawn = Vec::new();
-        let mut dead_entities = Vec::new();
+        let mut entities_to_despawn = Vec::with_capacity(8);
+        let mut dead_entities = Vec::with_capacity(4);
 
         self.entities.iter_sync(|entity_id, tracked| {
             if tracked.seen_by.write().remove(&player_id) {
@@ -564,8 +568,9 @@ impl EntityTracker {
         get_players_in_chunk: impl Fn(ChunkPos) -> Vec<i32>,
         get_player: impl Fn(i32) -> Option<Arc<Player>>,
     ) {
-        let mut players_to_remove = Vec::new();
-        let mut players_to_add = Vec::new();
+        // MSPT имба: пре-резерв 4 — без realloc на видимости игрока
+        let mut players_to_remove = Vec::with_capacity(4);
+        let mut players_to_add = Vec::with_capacity(4);
         let mut entity_to_spawn = None;
 
         self.entities.update_sync(&entity_id, |_, tracked| {
@@ -621,8 +626,9 @@ impl EntityTracker {
         get_players_in_chunk: &impl Fn(ChunkPos) -> Vec<i32>,
         get_player: &impl Fn(i32) -> Option<Arc<Player>>,
     ) {
-        let mut players_to_remove = Vec::new();
-        let mut players_to_add = Vec::new();
+        // MSPT имба: пре-резерв 4 — без realloc на видимости игрока
+        let mut players_to_remove = Vec::with_capacity(4);
+        let mut players_to_add = Vec::with_capacity(4);
         let mut entity_to_spawn = None;
 
         self.entities.update_sync(&entity_id, |_, tracked| {
@@ -769,7 +775,7 @@ impl EntityTracker {
         entity: &dyn Entity,
         player_id: i32,
     ) -> Vec<CSetPassengers> {
-        let mut packets = Vec::new();
+        let mut packets = Vec::with_capacity(4);
         let passenger_ids = self.direct_passenger_ids_seen_by_player(entity, player_id);
         if !passenger_ids.is_empty() {
             packets.push(CSetPassengers::new(entity.id(), passenger_ids));

@@ -44,7 +44,7 @@ pub mod block_behaviors;
 #[path = "generated/candle_cakes.rs"]
 pub mod candle_cakes;
 
-#[allow(warnings)]
+#[allow(warnings, reason = "generated code may contain warnings")]
 #[rustfmt::skip]
 #[path = "generated/items.rs"]
 pub mod item_behaviors;

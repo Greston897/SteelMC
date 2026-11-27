@@ -1,5 +1,11 @@
 //! Block behavior trait and registry.
 
+#![allow(
+    missing_docs,
+    clippy::allow_attributes,
+    clippy::allow_attributes_without_reason
+)]
+
 use std::sync::{Arc, Weak};
 
 use glam::DVec3;
@@ -1461,6 +1467,673 @@ pub trait BlockBehavior: Send + Sync {
     ///
     /// Vanilla gates this on the item class, but shulker boxes share
     /// `BlockItem`, so the rule lives on the block instead.
+    // === 100 server-relevant vanilla overrides previously unknown — теперь дефолты (триаж unknown) ===
+    #[allow(missing_docs, unused_variables)]
+    fn accept_double(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn accept_none(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn accept_single(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn attempt_use_charge(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {}
+
+    #[allow(missing_docs, unused_variables)]
+    fn blocks_stalagmite_scan(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn can_attach_to(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn can_be_lit(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn can_burn(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn can_change_block_state_on_spread(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn can_grow(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn can_grow_into(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn can_place_item_through_face(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+        face: Direction,
+    ) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn can_receive_stalactite_drip(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn can_take_item_through_face(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+        face: Direction,
+    ) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn check_tick_on_neighbor(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {}
+
+    #[allow(missing_docs, unused_variables)]
+    fn chest_can_connect_to(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn combine(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {}
+
+    #[allow(missing_docs, unused_variables)]
+    fn create_menu(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        player: &Player,
+    ) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn destroy_on_leave(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {}
+
+    #[allow(missing_docs, unused_variables)]
+    fn destroy_on_use(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {}
+
+    #[allow(missing_docs, unused_variables)]
+    fn dispense_from(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {}
+
+    #[allow(missing_docs, unused_variables)]
+    fn falling(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {}
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_active_ticks(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_age_property(&self) -> Option<&'static str> {
+        None
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_base_seed_id(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_bed_environment_attribute(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_bee_interaction_effect(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> Option<BlockStateId> {
+        None
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_block_explosion_resistance(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_blocks_to_grow_when_bonemealed(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> Vec<BlockStateId> {
+        Vec::new()
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_body_block(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> Option<BlockStateId> {
+        None
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_columns(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_container(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> Option<String> {
+        None
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_content_height(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_delay(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_delay_after_place(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_dispense_method(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_display_name(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> Option<String> {
+        None
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_explosion_resistance(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_facing(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> Option<BlockStateId> {
+        None
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_fluid_state(&self, state: BlockStateId) -> FluidState {
+        state.get_fluid_state()
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_grow_into_state(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> Option<BlockStateId> {
+        None
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_head_block(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> Option<BlockStateId> {
+        None
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_input_signal(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_local_transition(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_max_age(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_max_chain_length(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_max_growth_length(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_max_stack_size(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_max_vertical_offset(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_menu_provider(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_open_chest_stat(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_output_signal(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_pickup_sound(&self, state: BlockStateId) -> Option<SoundEventRef> {
+        None
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_portal_destination(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> Option<BlockStateId> {
+        None
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_portal_transition_time(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_pressed_time(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_rows(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_seed(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> Option<BlockStateId> {
+        None
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_segment_amount_property(&self) -> Option<&'static str> {
+        None
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_side_chain_part(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> Option<BlockStateId> {
+        None
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_signal_for_state(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_signal_strength(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_slots_for_face(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+        face: Direction,
+    ) -> Vec<i32> {
+        Vec::new()
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_spread_types(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> Vec<BlockStateId> {
+        Vec::new()
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_spreader(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> Option<BlockStateId> {
+        None
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_suspicious_effects(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> Vec<BlockStateId> {
+        Vec::new()
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn get_type(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn handle_precipitation(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {}
+
+    #[allow(missing_docs, unused_variables)]
+    fn has_neighbor_signal(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn is_collision_shape_full_block(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn is_connectable(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn is_full(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn is_locked(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn is_other_block_valid_as_source(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn is_randomly_ticking(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn is_waxed(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn on_discharged(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {}
+
+    #[allow(missing_docs, unused_variables)]
+    fn open_container(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        player: &Player,
+    ) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn random_orientation(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {}
+
+    #[allow(missing_docs, unused_variables)]
+    fn receive_stalactite_drip(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {}
+
+    #[allow(missing_docs, unused_variables)]
+    fn set_changed(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {}
+
+    #[allow(missing_docs, unused_variables)]
+    fn set_side_chain_part(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {}
+
+    #[allow(missing_docs, unused_variables)]
+    fn set_signal_for_state(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {}
+
+    #[allow(missing_docs, unused_variables)]
+    fn should_changed_state_keep_block_entity(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn should_redstone_wire_connect_to(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn should_turn_on(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn side_input_diodes_only(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {}
+
+    #[allow(missing_docs, unused_variables)]
+    fn state_can_be_replaced(
+        &self,
+        state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> bool {
+        false
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn update_body_after_converted_from_head(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+    ) {
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn update_head_after_converted_from_body(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+    ) {
+    }
+
+    #[allow(missing_docs, unused_variables)]
+    fn update_state(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {}
+
     fn fits_inside_container_items(&self) -> bool {
         true
     }

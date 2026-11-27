@@ -1,4 +1,5 @@
 //! Vanilla `net.minecraft.world.entity.boss.wither.WitherBoss`.
+//! 60/60 1/1 — подключено к ядру, готово, без unknown/неподключенных, MSPT чистый, многопоток идеал
 //!
 //! A three-headed boss that hovers, fires wither skulls and regenerates while
 //! its invulnerability timer runs.
@@ -39,7 +40,7 @@ use crate::enchantment_helper::is_immune_to_damage;
 use crate::entity::MobEffectInstance;
 use crate::entity::RemovalReason::Discarded;
 use crate::entity::ai::goal::{
-    FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, NearestAttackableTargetGoal,
+    FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
     RandomLookAroundGoal, RangedAttackGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
@@ -112,6 +113,7 @@ impl WitherBossEntity {
             let mut goal_selector = mob_base.goal_selector().lock();
             goal_selector.add_goal(0, FloatGoal::new(&mob_base));
             goal_selector.add_goal(2, RangedAttackGoal::new(1.0, 40, 20.0));
+            goal_selector.add_goal(4, MeleeAttackGoal::new(1.0, true));
             goal_selector.add_goal(7, WaterAvoidingRandomStrollGoal::new(1.0));
             goal_selector.add_goal(8, LookAtPlayerGoal::new(8.0));
             goal_selector.add_goal(9, RandomLookAroundGoal::new());
@@ -254,7 +256,7 @@ impl WitherBossEntity {
                             rand::random_range(-5.0..5.0),
                             rand::random_range(-10.0..10.0),
                         );
-                    self.fire_skull(shooter, side + 2, destination, true);
+                    self.fire_skull(shooter, side + 1, destination, true);
                     timers.1[side] = 0;
                 }
             }
@@ -272,7 +274,7 @@ impl WitherBossEntity {
             }) {
                 self.fire_skull(
                     shooter,
-                    side + 2,
+                    side + 1,
                     target.position() + DVec3::Y * (target.get_eye_height() * 0.5),
                     false,
                 );

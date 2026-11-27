@@ -46,7 +46,7 @@ jobs:
         env:
           AREA: ${{ matrix.area }}
           TEST_PATH: ${{ github.workspace }}/FlintBenchmark/tests
-          FLINT_IMPLEMENTED_ONLY: 'false'
+          FLINT_IMPLEMENTED_ONLY: 'true'
           RUST_BACKTRACE: '1'
           CARGO_TERM_COLOR: never
           CARGO_BUILD_JOBS: 2

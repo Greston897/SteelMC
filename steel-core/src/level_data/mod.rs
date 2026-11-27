@@ -67,6 +67,11 @@ impl Default for WorldBorderData {
     }
 }
 
+/// Current data format version for world level data.
+/// Bumped whenever the serialized structure of `LevelData` or any saved-data
+/// entry changes in a non-backward-compatible way.
+pub const DATA_VERSION: u32 = 1;
+
 /// Persistent level data that gets saved to disk.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LevelData {
@@ -104,6 +109,47 @@ pub struct LevelData {
     /// Generator settings this persisted world was created with.
     #[serde(default)]
     pub generation: Option<WorldGenerationSettings>,
+    /// Vanilla `DataPackConfig`: the data-pack selection persisted with the
+    /// primary level data (`level.dat`'s `Data.DataPacks`).
+    #[serde(default, skip_serializing_if = "DataPackSelection::is_default")]
+    pub data_packs: DataPackSelection,
+    /// Data format version of this world's saved data. Used to detect old
+    /// worlds that need migration before they can be loaded safely.
+    #[serde(default)]
+    pub data_version: u32,
+}
+
+/// The always-present baked data pack, vanilla's `MinecraftServer.VANILLA_BRAND`.
+pub const VANILLA_PACK: &str = "vanilla";
+
+/// Vanilla `DataPackConfig`: pack ids that are enabled and pack ids that are
+/// explicitly disabled. Vanilla writes both lists into the primary world's
+/// `level.dat`; Steel keeps them with the primary world's `level.toml`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DataPackSelection {
+    /// Selected pack ids in selection order.
+    #[serde(default)]
+    pub enabled: Vec<String>,
+    /// Discovered packs that must not be enabled automatically.
+    #[serde(default)]
+    pub disabled: Vec<String>,
+}
+
+impl Default for DataPackSelection {
+    fn default() -> Self {
+        Self {
+            enabled: vec![VANILLA_PACK.to_owned()],
+            disabled: Vec::new(),
+        }
+    }
+}
+
+impl DataPackSelection {
+    /// Whether this is vanilla's `DataPackConfig.DEFAULT`.
+    #[must_use]
+    pub fn is_default(&self) -> bool {
+        *self == Self::default()
+    }
 }
 
 /// Persisted generator metadata used to reject incompatible config changes.
@@ -316,6 +362,8 @@ impl LevelData {
             game_rules_values: GameRuleValues::new(&REGISTRY.game_rules),
             initialized: false,
             generation: None,
+            data_packs: DataPackSelection::default(),
+            data_version: DATA_VERSION,
         }
     }
 
@@ -446,6 +494,12 @@ impl LevelDataManager {
                         format!("Invalid {}: {e}", path.display()),
                     )
                 })?;
+                // Run old-world migrations when the saved data predates the
+                // current data format version.
+                if loaded.data_version < DATA_VERSION {
+                    let version = loaded.data_version;
+                    migrate_level_data(&mut loaded, version)?;
+                }
                 if matches!(&source, GameTimeSource::Primary) && loaded.game_time.is_none() {
                     return Err(io::Error::new(
                         io::ErrorKind::InvalidData,
@@ -1012,6 +1066,42 @@ mod tests {
             9
         );
     }
+}
+
+/// Migrates `LevelData` from an older `data_version` to `DATA_VERSION`.
+///
+/// Each migration step handles a single version boundary. Steps are applied
+/// in order until the data reaches `DATA_VERSION`. Unknown version gaps are
+/// rejected rather than guessed at.
+#[expect(clippy::unnecessary_trailing_comma, reason = "fmt")]
+fn migrate_level_data(data: &mut LevelData, from_version: u32) -> io::Result<()> {
+    let mut version = from_version;
+    while version < DATA_VERSION {
+        match version {
+            0 => migrate_v0_to_v1(data)?,
+            _ => {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    format!("no migration path from data version {version} to {DATA_VERSION}",),
+                ));
+            }
+        }
+        version += 1;
+    }
+    data.data_version = DATA_VERSION;
+    Ok(())
+}
+
+/// Migration from data version 0 to 1: initial data format.
+///
+/// Version 0 worlds have no `data_version` field at all (it deserializes to
+/// 0 via `#[serde(default)]`). This step marks them as migrated to version 1.
+#[expect(clippy::missing_const_for_fn, reason = "io Result not const")]
+#[expect(clippy::unnecessary_wraps, reason = "migration api")]
+fn migrate_v0_to_v1(_data: &mut LevelData) -> io::Result<()> {
+    // Version 1 is the initial data format; no field changes required.
+    // Future migrations would transform fields here.
+    Ok(())
 }
 
 #[cfg(test)]

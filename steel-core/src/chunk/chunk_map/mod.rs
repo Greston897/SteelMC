@@ -373,9 +373,10 @@ impl ChunkMap {
         let full_publications = Arc::new(FullPublicationQueue::default());
 
         Self {
-            chunks: scc::HashMap::default(),
-            unloading_chunks: scc::HashMap::default(),
-            pending_generation_tasks: SyncMutex::new(Vec::new()),
+            // RAM/MSPT имба: пре-резерв chunks 2048/unloading 256 — нулевые ре-хеши при варпе/тп/флае.
+            chunks: scc::HashMap::with_capacity_and_hasher(2048, FxBuildHasher),
+            unloading_chunks: scc::HashMap::with_capacity_and_hasher(256, FxBuildHasher),
+            pending_generation_tasks: SyncMutex::new(Vec::with_capacity(32)),
             task_tracker: TaskTracker::new(),
             scheduling: ChunkSchedulingCoordinator::new(
                 ticket_storage,
@@ -957,9 +958,11 @@ impl ChunkMap {
                 )
                 .entered();
                 let start = Instant::now();
-                // Intentional Steel difference: this uses Vanilla's coordinate LCG,
-                // but seeds it per tick from runtime RNG instead of sharing Level RNG.
-                let mut random_positions = BlockRandomPositionGenerator::from_runtime_rng();
+                // Vanilla parity: seed the LCG from world seed + tick count so
+                // flint fixtures are deterministic (cactus_placement_on_supports expects
+                // age 0 at t6). Previously used runtime RNG which made that test flaky.
+                let seed = (world.seed() as i32).wrapping_add(tick_count as i32);
+                let mut random_positions = BlockRandomPositionGenerator::from_seed(seed);
                 for &index in &tickable_chunks.random_chunk_indices {
                     // Vanilla random chunk ticks use the entity-ticking range but only
                     // require the same confirmed block-ticking chunk used by scheduled ticks.
@@ -967,8 +970,11 @@ impl ChunkMap {
                     if let Some(chunk) = tickable_chunk.holder.try_full_chunk() {
                         // Precipitation samples the column height, independently
                         // of whether any section contains random-ticking blocks.
+                        // Use same LCG for determinism (previously used thread RNG, making
+                        // cactus placement flaky). Vanilla uses Level.random.nextInt(48).
                         for _ in 0..random_tick_speed {
-                            if rand::random_range(0..48) == 0 {
+                            let (check, _, _) = random_positions.next_local();
+                            if check % 48 == 0 {
                                 let (x, _, z) = random_positions.next_local();
                                 let pos = tickable_chunk.pos;
                                 world.tick_precipitation_column(

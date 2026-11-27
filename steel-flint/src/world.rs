@@ -38,6 +38,7 @@ use steel_core::world::{LevelReader, World, WorldConfig, WorldStorageConfig};
 use steel_core::worldgen::{ChunkGeneratorType, EmptyChunkGenerator};
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::vanilla_dimension_types::OVERWORLD;
+use steel_registry::vanilla_game_rules::RANDOM_TICK_SPEED;
 use steel_registry::vanilla_world_clocks::OVERWORLD as OVERWORLD_CLOCK;
 use steel_registry::{REGISTRY, RegistryExt};
 use steel_utils::Identifier;
@@ -171,6 +172,11 @@ impl SteelTestWorld {
         // the dimension active, as a force-loaded vanilla test area would be,
         // so its daylight clock advances on those ticks as well.
         world.chunk_map.force_load(ChunkPos::new(0, 0));
+        // Flint fixtures expect deterministic placement: vanilla's random ticks
+        // would otherwise age cactus etc. within the 1-tick window between
+        // placement and assertion (e.g. cactus_placement_on_supports at t6 expects
+        // age=0). Real growth tests override this via explicit gamerule 1000.
+        let _ = world.set_game_rule(&RANDOM_TICK_SPEED, 0);
 
         Self {
             world,

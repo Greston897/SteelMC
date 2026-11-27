@@ -24,8 +24,12 @@ pub(super) struct NavigatingMobTracker {
 
 impl NavigatingMobTracker {
     pub(super) fn new() -> Self {
+        // RAM имба: резерв 32 моба — без realloc на ферме/рейде
         Self {
-            ids: SyncMutex::new(FxHashSet::default()),
+            ids: SyncMutex::new(FxHashSet::with_capacity_and_hasher(
+                32,
+                rustc_hash::FxBuildHasher,
+            )),
         }
     }
 
@@ -184,7 +188,9 @@ impl World {
             let root_type = root.entity_type();
             let root_pos = root.position();
             let root_chunk = ChunkPos::from_entity_pos(root_pos);
-            let mut dirty_chunks = FxHashSet::default();
+            // MSPT имба: резерв под dirty — без ре-хеша на загрузке чанка с экипажем
+            let mut dirty_chunks =
+                FxHashSet::with_capacity_and_hasher(4, rustc_hash::FxBuildHasher);
             for entity in &tree {
                 let entity_chunk = ChunkPos::from_entity_pos(entity.position());
                 if entity_chunk != source_chunk {
@@ -219,8 +225,10 @@ impl World {
     }
 
     pub(super) fn loaded_entity_trees(entities: Vec<SharedEntity>) -> Vec<Vec<SharedEntity>> {
-        let mut seen = FxHashSet::default();
-        let mut trees = Vec::new();
+        // MSPT имба: резерв под все энтити чанка — 1 alloc
+        let mut seen =
+            FxHashSet::with_capacity_and_hasher(entities.len(), rustc_hash::FxBuildHasher);
+        let mut trees = Vec::with_capacity(4);
 
         for entity in &entities {
             if entity.is_passenger() {
@@ -293,11 +301,13 @@ impl World {
         self: &Arc<Self>,
         root: SharedEntity,
     ) -> Result<(), AddEntityError> {
-        let mut entities = Vec::new();
-        let mut seen_ids = FxHashSet::default();
+        // MSPT имба: резерв под дерево экипажа — 1 alloc
+        let mut entities = Vec::with_capacity(4);
+        let mut seen_ids = FxHashSet::with_capacity_and_hasher(4, rustc_hash::FxBuildHasher);
         Self::collect_fresh_entity_tree(&root, &mut seen_ids, &mut entities)?;
 
-        let mut dirty_chunks = FxHashSet::default();
+        let mut dirty_chunks =
+            FxHashSet::with_capacity_and_hasher(entities.len(), rustc_hash::FxBuildHasher);
         for entity in &entities {
             let chunk = ChunkPos::from_entity_pos(entity.position());
             if !self.entity_manager.is_chunk_loaded(chunk) {

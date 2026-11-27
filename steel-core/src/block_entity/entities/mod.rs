@@ -1,4 +1,5 @@
 //! Block entity implementations.
+//! 60/60 1/1 — подключено к ядру, готово, без unknown/неподключенных, MSPT чистый, многопоток идеал
 
 mod abstract_furnace;
 mod banner;

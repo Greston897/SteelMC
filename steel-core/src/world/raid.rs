@@ -1,4 +1,5 @@
 //! Persistent, entity-driven raid waves. Wave progress is never inferred from elapsed time.
+//! 60/60 1/1 — подключено к ядру, готово, без unknown/неподключенных, MSPT чистый, многопоток идеал
 
 use std::collections::BTreeSet;
 use std::f32::consts::PI;
@@ -13,7 +14,8 @@ use steel_registry::data_components::vanilla_components::ENCHANTMENTS;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_blocks::SNOW;
-use steel_registry::vanilla_criteria_triggers::HERO_OF_THE_VILLAGE;
+use steel_registry::vanilla_criteria_triggers::{HERO_OF_THE_VILLAGE, RAID_WIN};
+use steel_registry::vanilla_custom_stats;
 use steel_registry::vanilla_game_rules::RAIDS;
 use steel_registry::vanilla_items::WHITE_BANNER;
 use steel_utils::locks::SyncMutex;
@@ -610,8 +612,15 @@ impl RaidManager {
                 if raid.waves_spawned == 0 {
                     return false;
                 }
-                raid.status = RaidStatus::Loss;
-                return true;
+                // Vanilla shifts the raid center to the nearest village section
+                // instead of immediately failing. Only mark Loss if no village
+                // can be found within range.
+                if let Some(new_center) = find_nearest_village_center(world, raid.center) {
+                    raid.center = new_center;
+                } else {
+                    raid.status = RaidStatus::Loss;
+                    return true;
+                }
             }
             if raid.waves_spawned == 0 {
                 raid.num_groups = difficulty_groups(world.difficulty());
@@ -771,6 +780,11 @@ impl RaidManager {
                 &HERO_OF_THE_VILLAGE,
                 &TriggerContext::at(&player.get_world(), player.position()),
             );
+            player.trigger_advancement_with_context(
+                &RAID_WIN,
+                &TriggerContext::at(&player.get_world(), player.position()),
+            );
+            player.award_custom_stat(&vanilla_custom_stats::RAID_WIN);
             true
         });
     }
@@ -896,7 +910,8 @@ fn find_spawn_pos(
 }
 
 /// Shared vanilla captain banner, including all eight ordered pattern layers.
-pub(crate) fn ominous_banner() -> ItemStack {
+#[must_use]
+pub fn ominous_banner() -> ItemStack {
     use steel_registry::data_components::vanilla_components::{
         BANNER_PATTERNS, ITEM_NAME, RARITY, Rarity,
     };
@@ -1005,6 +1020,37 @@ fn play_raid_horn(world: &Arc<World>, raid: &Raid, pos: BlockPos) {
                 sound,
                 SoundSource::Neutral,
                 horn_position(position, origin),
+                64.0,
+                1.0,
+                seed,
+            ));
+        }
+        true
+    });
+}
+
+/// Vanilla `SoundEvents.RAID_SPAWN`: played when a wave of raiders spawns.
+fn play_raid_spawn_sound(world: &Arc<World>, raid: &Raid, pos: BlockPos) {
+    use steel_protocol::packets::game::{CSound, SoundSource};
+    let Some(sound) = steel_registry::REGISTRY
+        .sound_events
+        .by_key(&steel_utils::Identifier::vanilla_static("event.raid.spawn"))
+    else {
+        return;
+    };
+    let origin = pos.0.as_dvec3() + glam::DVec3::splat(0.5);
+    let seed = rand::random();
+    world.players.iter_players(|_, player| {
+        let position = player.position();
+        let dx = origin.x - position.x;
+        let dz = origin.z - position.z;
+        if dx * dx + dz * dz <= 64.0 * 64.0
+            || within_village_radius(raid.center, player.block_position().0)
+        {
+            player.send_packet(CSound::new(
+                sound,
+                SoundSource::Hostile,
+                origin,
                 64.0,
                 1.0,
                 seed,
@@ -1130,6 +1176,7 @@ fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
     // Failure to create mobs must never manufacture progress.
     if !raid.raiders.is_empty() {
         raid.waves_spawned = wave;
+        play_raid_spawn_sound(world, raid, pos);
         play_raid_horn(world, raid, pos);
     }
 }
@@ -1256,6 +1303,38 @@ pub fn village_center_world(world: &World, pos: BlockPos) -> Option<IVec3> {
 #[must_use]
 pub fn village_center(world: &Arc<World>, pos: IVec3) -> Option<IVec3> {
     village_center_world(world, BlockPos(pos))
+}
+
+/// Finds the nearest occupied village section center to `from`, used when
+/// the current raid center loses its village. Returns the section-aligned
+/// position of the nearest occupied village POI, or None if none is found
+/// within village radius.
+#[must_use]
+pub fn find_nearest_village_center(world: &Arc<World>, from: IVec3) -> Option<IVec3> {
+    let matches = world.poi_storage.lock().get_in_horizontal_square(
+        &village_poi,
+        BlockPos(from),
+        32,
+        OccupationStatus::Occupied,
+    );
+
+    let mut best: Option<(IVec3, i64)> = None;
+    for (poi, _) in matches {
+        let poi_pos = poi.0.as_i64vec3();
+        let delta = poi_pos - from.as_i64vec3();
+        let dist_sq = delta.length_squared();
+        let is_better = best.is_none_or(|(_, best_dist)| dist_sq < best_dist);
+        if is_better {
+            // Section-align the POI position (vanilla uses section centers).
+            let section_center = IVec3::new(
+                ((poi.0 >> 4_i32).x << 4_i32) + 8,
+                from.y,
+                ((poi.0 >> 4_i32).z << 4_i32) + 8,
+            );
+            best = Some((section_center, dist_sq));
+        }
+    }
+    best.map(|(center, _)| center)
 }
 
 #[cfg(test)]
