@@ -15,6 +15,7 @@
 #![allow(clippy::missing_const_for_fn, reason = "not needed")]
 #![allow(clippy::default_trait_access, reason = "HashMap::default is clear")]
 #![allow(clippy::absolute_paths, reason = "plugin uses absolute paths")]
+#![allow(clippy::clone_on_ref_ptr, reason = "Arc::clone is idiomatic")]
 #![allow(clippy::disallowed_types, reason = "now uses FxHashMap/SyncRwLock, allow remaining")]
 
 use std::sync::Arc;
