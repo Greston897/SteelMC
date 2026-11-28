@@ -52,7 +52,7 @@
 #![allow(clippy::enum_variant_names, reason = "MC enums share prefixes by design")]
 #![allow(clippy::collapsible_if, reason = "collapsible_if noisy for command checks")]
 #![allow(clippy::while_let_on_iterator, reason = "manual char parsing clearer")]
-#![allow(clippy::unfulfilled_lint_expectations, reason = "expect may be unfulfilled after refactoring, not critical")]
+#![allow(unfulfilled_lint_expectations, reason = "expect may be unfulfilled after refactoring, not critical")]
 
 use steel_protocol as _;
 
