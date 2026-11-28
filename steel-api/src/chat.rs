@@ -21,6 +21,7 @@ pub enum ClickEvent {
 
 /// Событие ховера.
 #[derive(Debug, Clone)]
+#[expect(clippy::enum_variant_names, reason = "Adventure HoverEvent variants share Show prefix, matches vanilla")]
 pub enum HoverEvent {
     ShowText(Box<Component>),
     ShowItem { id: String, count: i32 },
