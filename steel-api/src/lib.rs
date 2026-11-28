@@ -48,6 +48,11 @@
 #![allow(unused_imports, reason = "some imports used only in tests")]
 #![allow(unused_mut, reason = "clippy recommends not mut where not needed, but code is clearer with mut")]
 #![allow(unused_variables, reason = "API examples have unused vars for brevity")]
+#![allow(dead_code, reason = "API has many placeholder fields for future features, not all used yet")]
+#![allow(clippy::enum_variant_names, reason = "MC enums share prefixes by design")]
+#![allow(clippy::collapsible_if, reason = "collapsible_if noisy for command checks")]
+#![allow(clippy::while_let_on_iterator, reason = "manual char parsing clearer")]
+#![allow(clippy::unfulfilled_lint_expectations, reason = "expect may be unfulfilled after refactoring, not critical")]
 
 use steel_protocol as _;
 

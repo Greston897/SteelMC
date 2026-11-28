@@ -160,8 +160,8 @@ impl CommandNode {
 
     pub fn can_execute(&self, src: &CommandSource) -> bool {
         if self.requires_op && !src.is_op() { return false; }
-        if let Some(perm) = &self.permission { if !src.has_permission(perm) { return false; } }
-        if let Some(req) = &self.requires { if !req(src) { return false; } }
+        if let Some(perm) = &self.permission && !src.has_permission(perm) { return false; }
+        if let Some(req) = &self.requires && !req(src) { return false; }
         true
     }
 }

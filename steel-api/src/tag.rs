@@ -25,6 +25,7 @@ pub struct TagRegistry {
     block_tags: steel_utils::locks::SyncRwLock<rustc_hash::FxHashMap<Identifier, Tag<Identifier>>>,
     item_tags: steel_utils::locks::SyncRwLock<rustc_hash::FxHashMap<Identifier, Tag<Identifier>>>,
     entity_tags: steel_utils::locks::SyncRwLock<rustc_hash::FxHashMap<Identifier, Tag<Identifier>>>,
+    #[expect(dead_code, reason = "fluid_tags reserved for future fluid API")]
     fluid_tags: steel_utils::locks::SyncRwLock<rustc_hash::FxHashMap<Identifier, Tag<Identifier>>>,
 }
 

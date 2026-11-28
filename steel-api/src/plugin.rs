@@ -119,7 +119,6 @@ pub struct PluginContext {
 }
 
 impl PluginContext {
-    #[expect(clippy::too_many_arguments, reason = "PluginContext needs many deps")]
     pub fn new(
         descriptor: PluginDescriptor,
         data_folder: PathBuf,

@@ -59,6 +59,7 @@ pub trait PacketListener: Send + Sync + 'static {
 }
 
 struct ListenerEntry {
+    #[expect(dead_code, reason = "plugin stored for debugging and future unlink")]
     plugin: String,
     listener: Arc<dyn PacketListener>,
     priority: PacketPriority,
@@ -67,6 +68,7 @@ struct ListenerEntry {
 /// Шина пакетов — ядро вызывает `fire` перед каждым пакетом.
 pub struct PacketBus {
     listeners: SyncRwLock<Vec<ListenerEntry>>,
+    #[expect(dead_code, reason = "intercept_all cached for fast dispatch, used in future")]
     intercept_all: SyncRwLock<FxHashMap<(PacketDirection, i32), Vec<usize>>>,
 }
 

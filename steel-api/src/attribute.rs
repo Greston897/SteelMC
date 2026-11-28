@@ -22,6 +22,7 @@ impl Attribute {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[expect(clippy::enum_variant_names, reason = "MC attribute operations share Add prefix by design")]
 pub enum Operation {
     AddValue, AddMultipliedBase, AddMultipliedTotal,
 }

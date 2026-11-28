@@ -55,7 +55,7 @@ impl PlaceholderManager {
         let mut chars = out.chars().peekable();
         let mut buf = String::new();
         let mut in_ph = false;
-        while let Some(c) = chars.next() {
+        for c in chars {
             if c == '%' {
                 if in_ph {
                     // закрываем
