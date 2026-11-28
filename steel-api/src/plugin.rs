@@ -25,6 +25,11 @@ use crate::packet::PacketBus;
 use crate::worldgen::WorldgenRegistry;
 use crate::config::ConfigManager;
 use crate::metadata::MetadataStore;
+use crate::resourcepack::ResourcePackManager;
+use crate::world_creator::WorldManager;
+use crate::messaging::Messenger;
+use crate::ban::BanManager;
+use crate::services::ServicesManager;
 
 /// Ошибка плагина.
 #[derive(Debug, Error)]
@@ -44,6 +49,9 @@ pub enum PluginError {
 pub type PluginResult<T> = Result<T, PluginError>;
 
 /// Декларативный дескриптор плагина (аналог `plugin.yml` / `paper-plugin.yml`).
+/// Повтор Bukkit точь-в-точь: `name`, `version`, `main`, `api-version`, `description`,
+/// `author`/`authors`, `contributors`, `website`, `prefix`, `depend`/`softdepend`/`loadbefore`,
+/// `provides`, `libraries`, `load` (STARTUP/POSTWORLD), `commands`, `permissions`, `folia-supported`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PluginDescriptor {
     /// `namespace:name`, только `a-z0-9._-`, например `my_plugin`.
@@ -53,9 +61,15 @@ pub struct PluginDescriptor {
     /// Человеко-читаемое описание.
     #[serde(default)]
     pub description: String,
+    /// Первый автор (отображается первым).
+    #[serde(default)]
+    pub author: String,
     /// Авторы.
     #[serde(default)]
     pub authors: Vec<String>,
+    /// Контрибьюторы.
+    #[serde(default)]
+    pub contributors: Vec<String>,
     /// Версия API, напр. `26.3`.
     #[serde(default = "default_api_version")]
     pub api_version: String,
@@ -71,19 +85,38 @@ pub struct PluginDescriptor {
     /// Сайт / репозиторий.
     #[serde(default)]
     pub website: Option<String>,
+    /// Префикс логов (`prefix` в plugin.yml), иначе `name`.
+    #[serde(default)]
+    pub prefix: Option<String>,
     /// Загружать до мира? как Paper `loadbefore`.
     #[serde(default)]
     pub load_before: Vec<String>,
+    /// Когда грузить: `STARTUP` | `POSTWORLD` (как `load` в plugin.yml).
+    #[serde(default = "default_load")]
+    pub load: String,
+    /// Предоставляет старые имена (`provides`).
+    #[serde(default)]
+    pub provides: Vec<String>,
+    /// Внешние Maven `libraries` (скачиваются Paper-loader'ом).
+    #[serde(default)]
+    pub libraries: Vec<String>,
     /// Стартовый лоадер.
     #[serde(default)]
     pub folia_supported: bool,
+    /// Команды из `plugin.yml` — регистрируются автоматом.
+    #[serde(default)]
+    pub commands: std::collections::HashMap<String, crate::plugin_loader::CommandSpec>,
+    /// Права из `plugin.yml`.
+    #[serde(default)]
+    pub permissions: std::collections::HashMap<String, crate::plugin_loader::PermissionSpec>,
 }
 
 fn default_api_version() -> String { crate::API_VERSION.to_string() }
+fn default_load() -> String { "POSTWORLD".to_string() }
 
 impl PluginDescriptor {
     pub fn new(name: impl Into<String>, version: impl Into<String>) -> Self {
-        Self { name: name.into(), version: version.into(), description: String::new(), authors: Vec::new(), api_version: default_api_version(), depend: Vec::new(), soft_depend: Vec::new(), main: String::new(), website: None, load_before: Vec::new(), folia_supported: false }
+        Self { name: name.into(), version: version.into(), description: String::new(), author: String::new(), authors: Vec::new(), contributors: Vec::new(), api_version: default_api_version(), depend: Vec::new(), soft_depend: Vec::new(), main: String::new(), website: None, prefix: None, load_before: Vec::new(), load: default_load(), provides: Vec::new(), libraries: Vec::new(), folia_supported: false, commands: Default::default(), permissions: Default::default() }
     }
     pub fn validate(&self) -> PluginResult<()> {
         if self.name.is_empty() || self.name.len() > 64 { return Err(PluginError::InitFailed(self.name.clone(), "name must be 1..64 chars".into())); }
@@ -104,7 +137,7 @@ pub struct PluginContext {
     commands: Arc<CommandRegistryHandle>,
     permissions: Arc<PermissionRegistryHandle>,
     registry: Arc<dyn RegistryAccess>,
-    // новые
+    // новые — покрытие каждой системы ядра и каждой мини-части
     server: Arc<ServerHandle>,
     scoreboard: Arc<Scoreboard>,
     regions: Arc<RegionManager>,
@@ -116,6 +149,11 @@ pub struct PluginContext {
     worldgen: Arc<WorldgenRegistry>,
     config_mgr: Arc<ConfigManager>,
     metadata: Arc<MetadataStore>,
+    resourcepacks: Arc<ResourcePackManager>,
+    worlds: Arc<WorldManager>,
+    messenger: Arc<Messenger>,
+    bans: Arc<BanManager>,
+    services: Arc<ServicesManager>,
 }
 
 impl PluginContext {
@@ -140,8 +178,13 @@ impl PluginContext {
             tags: Arc::new(TagRegistry::new()),
             packets: Arc::new(PacketBus::new()),
             worldgen: Arc::new(WorldgenRegistry::new()),
-            config_mgr: Arc::new(ConfigManager::new(data_folder)),
+            config_mgr: Arc::new(ConfigManager::new(data_folder.clone())),
             metadata: Arc::new(MetadataStore::new()),
+            resourcepacks: Arc::new(ResourcePackManager::new()),
+            worlds: Arc::new(WorldManager::new()),
+            messenger: Arc::new(Messenger::new()),
+            bans: Arc::new(BanManager::new()),
+            services: Arc::new(ServicesManager::new()),
         }
     }
 
@@ -167,8 +210,13 @@ impl PluginContext {
             tags: Arc::new(TagRegistry::new()),
             packets: Arc::new(PacketBus::new()),
             worldgen: Arc::new(WorldgenRegistry::new()),
-            config_mgr: Arc::new(ConfigManager::new(data_folder)),
+            config_mgr: Arc::new(ConfigManager::new(data_folder.clone())),
             metadata: Arc::new(MetadataStore::new()),
+            resourcepacks: Arc::new(ResourcePackManager::new()),
+            worlds: Arc::new(WorldManager::new()),
+            messenger: Arc::new(Messenger::new()),
+            bans: Arc::new(BanManager::new()),
+            services: Arc::new(ServicesManager::new()),
         }
     }
 
@@ -191,6 +239,11 @@ impl PluginContext {
     pub fn worldgen(&self) -> &Arc<WorldgenRegistry> { &self.worldgen }
     pub fn configs(&self) -> &Arc<ConfigManager> { &self.config_mgr }
     pub fn metadata(&self) -> &Arc<MetadataStore> { &self.metadata }
+    pub fn resourcepacks(&self) -> &Arc<ResourcePackManager> { &self.resourcepacks }
+    pub fn world_manager(&self) -> &Arc<WorldManager> { &self.worlds }
+    pub fn messenger(&self) -> &Arc<Messenger> { &self.messenger }
+    pub fn bans(&self) -> &Arc<BanManager> { &self.bans }
+    pub fn services(&self) -> &Arc<ServicesManager> { &self.services }
 
     /// Заменить существующую ванильную команду — например, `/give` на свой обработчик.
     /// Пример из Essentials: `ctx.commands().register_override(literal("give").executes(|src, ctx| ...))`

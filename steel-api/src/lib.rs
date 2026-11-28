@@ -57,6 +57,7 @@
 use steel_protocol as _;
 
 pub mod attribute;
+pub mod ban;
 pub mod block;
 pub mod bossbar;
 pub mod chat;
@@ -71,6 +72,7 @@ pub mod events;
 pub mod fluid;
 pub mod inventory;
 pub mod item;
+pub mod messaging;
 pub mod metadata;
 pub mod nbt;
 pub mod permission;
@@ -78,17 +80,21 @@ pub mod packet;
 pub mod placeholder;
 pub mod player;
 pub mod plugin;
+pub mod plugin_loader;
 pub mod protocol;
 pub mod recipe;
 pub mod redstone;
 pub mod region;
 pub mod registry;
+pub mod resourcepack;
 pub mod scheduler;
 pub mod scoreboard;
 pub mod server;
+pub mod services;
 pub mod tab;
 pub mod tag;
 pub mod world;
+pub mod world_creator;
 pub mod worldgen;
 
 pub mod prelude;

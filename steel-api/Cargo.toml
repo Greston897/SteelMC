@@ -13,6 +13,8 @@ steel-utils.workspace = true
 steel-math.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+serde_yaml = "0.9"
+toml.workspace = true
 thiserror.workspace = true
 anyhow.workspace = true
 tokio = { workspace = true, features = ["sync","time","rt"] }
