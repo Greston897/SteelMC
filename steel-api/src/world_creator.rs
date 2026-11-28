@@ -254,7 +254,7 @@ use steel_api::prelude::*;
 pub struct MyMultiWorld;
 impl Plugin for MyMultiWorld {
   fn on_enable(&self, ctx: &PluginContext) -> PluginResult<()> {
-    let wm = ctx.world_manager(); // или ctx.server() + WorldManager
+    let wm = ctx.world_manager();
     wm.register(WorldCreator::new("lobby").seed(123).env(WorldEnv::Normal));
     wm.register(WorldCreator::new("pvp_nether").env(WorldEnv::Nether).hardcore(true));
     ctx.server().create_world("lobby", Some(123));
@@ -262,7 +262,6 @@ impl Plugin for MyMultiWorld {
   }
 }
 */
-
 #[cfg(test)]
 mod tests {
     use super::*;

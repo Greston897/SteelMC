@@ -34,6 +34,7 @@
 #![allow(clippy::doc_markdown, reason = "docs contain many Minecraft terms, backticks not needed for every word")]
 #![allow(clippy::doc_lazy_continuation, reason = "dash lists in module docs")]
 #![allow(clippy::derivable_impls, reason = "manual Default for enums with custom variant is clearer")]
+#![allow(clippy::empty_line_after_doc_comments, reason = "example docs have blank line before tests")]
 #![allow(clippy::module_name_repetitions, reason = "steel_api module names intentionally repeat for clarity")]
 #![allow(clippy::absolute_paths, reason = "API uses absolute paths for clarity in examples")]
 #![allow(clippy::needless_pass_by_value, reason = "API takes owned values for ergonomics")]
