@@ -244,7 +244,7 @@ impl PluginDiscovery {
                 dir.join(format!("{stem}.yml")),
             ] {
                 if cand.exists() {
-                    let s = std::fs::read_to_string(cand).map_err(|e| e.to_string())?;
+                    let s = std::fs::read_to_string(&cand).map_err(|e| e.to_string())?;
                     if cand.extension().and_then(|s| s.to_str()) == Some("toml") {
                         return PluginSpec::from_toml(&s);
                     } else {
