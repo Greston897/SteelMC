@@ -4,8 +4,8 @@
 //! Paper расширяет: `PlayerSetResourcePackStatusEvent`, `ServerResourcePack`.
 //! Steel повторяет 1:1, но типобезопасно и без утечек.
 
-use std::sync::Arc;
 use rustc_hash::FxHashMap;
+use std::sync::Arc;
 use steel_utils::locks::SyncRwLock;
 use uuid::Uuid;
 
@@ -33,19 +33,37 @@ impl std::fmt::Display for ResourcePackStatus {
 pub struct ResourcePack {
     pub id: Uuid,
     pub url: String,
-    pub hash: Option<String>, // sha1 hex 40 символов, может быть None
+    pub hash: Option<String>,   // sha1 hex 40 символов, может быть None
     pub prompt: Option<String>, // MiniMessage/Component JSON
     pub required: bool,
 }
 
 impl ResourcePack {
     pub fn new(url: impl Into<String>) -> Self {
-        Self { id: Uuid::new_v4(), url: url.into(), hash: None, prompt: None, required: false }
+        Self {
+            id: Uuid::new_v4(),
+            url: url.into(),
+            hash: None,
+            prompt: None,
+            required: false,
+        }
     }
-    pub fn with_hash(mut self, hash: impl Into<String>) -> Self { self.hash = Some(hash.into()); self }
-    pub fn with_prompt(mut self, prompt: impl Into<String>) -> Self { self.prompt = Some(prompt.into()); self }
-    pub fn required(mut self, r: bool) -> Self { self.required = r; self }
-    pub fn with_id(mut self, id: Uuid) -> Self { self.id = id; self }
+    pub fn with_hash(mut self, hash: impl Into<String>) -> Self {
+        self.hash = Some(hash.into());
+        self
+    }
+    pub fn with_prompt(mut self, prompt: impl Into<String>) -> Self {
+        self.prompt = Some(prompt.into());
+        self
+    }
+    pub fn required(mut self, r: bool) -> Self {
+        self.required = r;
+        self
+    }
+    pub fn with_id(mut self, id: Uuid) -> Self {
+        self.id = id;
+        self
+    }
 }
 
 /// Событие статуса — `PlayerResourcePackStatusEvent` как в Paper.
@@ -65,11 +83,18 @@ pub struct ResourcePackManager {
     statuses: SyncRwLock<FxHashMap<Uuid, (Uuid, ResourcePackStatus)>>,
 }
 
-impl Default for ResourcePackManager { fn default() -> Self { Self::new() } }
+impl Default for ResourcePackManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl ResourcePackManager {
     pub fn new() -> Self {
-        Self { global: SyncRwLock::new(Vec::new()), statuses: SyncRwLock::new(FxHashMap::default()) }
+        Self {
+            global: SyncRwLock::new(Vec::new()),
+            statuses: SyncRwLock::new(FxHashMap::default()),
+        }
     }
 
     /// Добавить глобальный пак (как `server.properties` resource-pack).
@@ -84,17 +109,32 @@ impl ResourcePackManager {
         w.retain(|p| p.id != id);
         before != w.len()
     }
-    pub fn globals(&self) -> Vec<ResourcePack> { self.global.read().clone() }
-    pub fn clear_globals(&self) { self.global.write().clear(); }
+    pub fn globals(&self) -> Vec<ResourcePack> {
+        self.global.read().clone()
+    }
+    pub fn clear_globals(&self) {
+        self.global.write().clear();
+    }
 
     /// Отправить пак конкретному игроку (ядро шлёт пакет).
     /// Возвращает `ResourcePackStatusEvent` когда клиент ответит — через `on_status`.
-    pub fn send_to(&self, _player: Uuid, pack: ResourcePack) -> Uuid { pack.id }
+    pub fn send_to(&self, _player: Uuid, pack: ResourcePack) -> Uuid {
+        pack.id
+    }
 
     /// Вызывается ядром когда приходит `ServerboundResourcePack`.
-    pub fn on_status(&self, player: Uuid, pack_id: Uuid, status: ResourcePackStatus) -> PlayerResourcePackStatusEvent {
+    pub fn on_status(
+        &self,
+        player: Uuid,
+        pack_id: Uuid,
+        status: ResourcePackStatus,
+    ) -> PlayerResourcePackStatusEvent {
         self.statuses.write().insert(player, (pack_id, status));
-        PlayerResourcePackStatusEvent { player, pack_id, status }
+        PlayerResourcePackStatusEvent {
+            player,
+            pack_id,
+            status,
+        }
     }
 
     pub fn status_of(&self, player: Uuid) -> Option<(Uuid, ResourcePackStatus)> {
@@ -111,7 +151,10 @@ impl ResourcePackManager {
 pub trait ResourcePackPlayer: Send + Sync + 'static {
     fn set_resource_pack(&self, pack: ResourcePack);
     fn remove_resource_packs(&self);
-    fn has_resource_pack(&self, id: Uuid) -> bool { let _ = id; false }
+    fn has_resource_pack(&self, id: Uuid) -> bool {
+        let _ = id;
+        false
+    }
 }
 
 // Пример в `DummyPlayer`:
@@ -137,7 +180,9 @@ mod tests {
     use super::*;
     #[test]
     fn pack_builder() {
-        let p = ResourcePack::new("https://example.com/pack.zip").with_hash("a".repeat(40)).required(true);
+        let p = ResourcePack::new("https://example.com/pack.zip")
+            .with_hash("a".repeat(40))
+            .required(true);
         assert!(ResourcePackManager::validate_hash(p.hash.as_ref().unwrap()));
         assert!(p.required);
     }

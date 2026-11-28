@@ -4,10 +4,10 @@
 //! В ванили каналы — `minecraft:brand`, `minecraft:register`, `minecraft:unregister`.
 //! Steel повторяет 1:1 + zero-copy + типобезопасные хелперы.
 
-use std::sync::Arc;
 use rustc_hash::FxHashSet;
-use steel_utils::locks::SyncRwLock;
+use std::sync::Arc;
 use steel_utils::Identifier;
+use steel_utils::locks::SyncRwLock;
 
 /// Максимальная длина канала — 64 как в ванили (после 1.13 — `Identifier`).
 pub const MAX_CHANNEL_LEN: usize = 64;
@@ -37,26 +37,47 @@ pub struct Messenger {
     listeners: SyncRwLock<Vec<(String, String, Arc<dyn PluginMessageListener>)>>, // (plugin, channel, listener)
 }
 
-impl Default for Messenger { fn default() -> Self { Self::new() } }
+impl Default for Messenger {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl Messenger {
     pub fn new() -> Self {
-        Self { incoming: SyncRwLock::new(FxHashSet::default()), outgoing: SyncRwLock::new(FxHashSet::default()), listeners: SyncRwLock::new(Vec::new()) }
+        Self {
+            incoming: SyncRwLock::new(FxHashSet::default()),
+            outgoing: SyncRwLock::new(FxHashSet::default()),
+            listeners: SyncRwLock::new(Vec::new()),
+        }
     }
 
     fn validate(channel: &str) -> Result<(), MessagingError> {
-        if channel.len() > MAX_CHANNEL_LEN { return Err(MessagingError::TooLong(channel.into())); }
-        if channel.starts_with("minecraft:") && !["minecraft:brand", "minecraft:register", "minecraft:unregister"].contains(&channel) {
+        if channel.len() > MAX_CHANNEL_LEN {
+            return Err(MessagingError::TooLong(channel.into()));
+        }
+        if channel.starts_with("minecraft:")
+            && ![
+                "minecraft:brand",
+                "minecraft:register",
+                "minecraft:unregister",
+            ]
+            .contains(&channel)
+        {
             // ваниль резервирует, но Paper разрешает кастом после `minecraft:`? будем строго как Bukkit
         }
-        if channel.contains(' ') { return Err(MessagingError::Reserved(channel.into())); }
+        if channel.contains(' ') {
+            return Err(MessagingError::Reserved(channel.into()));
+        }
         Ok(())
     }
 
     pub fn register_incoming(&self, plugin: &str, channel: &str) -> Result<(), MessagingError> {
         Self::validate(channel)?;
         self.incoming.write().insert(channel.to_string());
-        self.listeners.write().retain(|(p,c,_)| !(p==plugin && c==channel)); // dedup on re-register?
+        self.listeners
+            .write()
+            .retain(|(p, c, _)| !(p == plugin && c == channel)); // dedup on re-register?
         Ok(())
     }
     pub fn register_outgoing(&self, _plugin: &str, channel: &str) -> Result<(), MessagingError> {
@@ -64,24 +85,44 @@ impl Messenger {
         self.outgoing.write().insert(channel.to_string());
         Ok(())
     }
-    pub fn unregister_incoming(&self, channel: &str) { self.incoming.write().remove(channel); self.listeners.write().retain(|(_,c,_)| c!=channel); }
-    pub fn unregister_outgoing(&self, channel: &str) { self.outgoing.write().remove(channel); }
+    pub fn unregister_incoming(&self, channel: &str) {
+        self.incoming.write().remove(channel);
+        self.listeners.write().retain(|(_, c, _)| c != channel);
+    }
+    pub fn unregister_outgoing(&self, channel: &str) {
+        self.outgoing.write().remove(channel);
+    }
 
-    pub fn is_incoming(&self, c: &str) -> bool { self.incoming.read().contains(c) }
-    pub fn is_outgoing(&self, c: &str) -> bool { self.outgoing.read().contains(c) }
+    pub fn is_incoming(&self, c: &str) -> bool {
+        self.incoming.read().contains(c)
+    }
+    pub fn is_outgoing(&self, c: &str) -> bool {
+        self.outgoing.read().contains(c)
+    }
 
     pub fn add_listener(&self, plugin: &str, channel: &str, l: Arc<dyn PluginMessageListener>) {
-        self.listeners.write().push((plugin.to_string(), channel.to_string(), l));
+        self.listeners
+            .write()
+            .push((plugin.to_string(), channel.to_string(), l));
     }
     pub fn remove_listener(&self, plugin: &str, channel: &str) {
-        self.listeners.write().retain(|(p,c,_)| !(p==plugin && c==channel));
+        self.listeners
+            .write()
+            .retain(|(p, c, _)| !(p == plugin && c == channel));
     }
 
     /// Вызывается ядром когда от игрока пришёл `CustomPayload`.
     pub fn dispatch_incoming(&self, player: Option<uuid::Uuid>, channel: &str, data: &[u8]) {
-        let ls: Vec<Arc<dyn PluginMessageListener>> = self.listeners.read().iter()
-            .filter(|(_,c,_)| c==channel).map(|(_,_,l)| l.clone()).collect();
-        for l in ls { l.on_plugin_message(player, channel, data); }
+        let ls: Vec<Arc<dyn PluginMessageListener>> = self
+            .listeners
+            .read()
+            .iter()
+            .filter(|(_, c, _)| c == channel)
+            .map(|(_, _, l)| l.clone())
+            .collect();
+        for l in ls {
+            l.on_plugin_message(player, channel, data);
+        }
     }
 
     /// Хелпер для `BungeeCord` — собрать пакет `Forward`/`Connect` etc.
@@ -107,17 +148,23 @@ fn write_utf(out: &mut Vec<u8>, s: &str) {
     out.extend_from_slice(s.as_bytes());
 }
 fn read_utf(data: &[u8], pos: &mut usize) -> Option<String> {
-    if *pos + 2 > data.len() { return None; }
-    let len = u16::from_be_bytes([data[*pos], data[*pos+1]]) as usize;
+    if *pos + 2 > data.len() {
+        return None;
+    }
+    let len = u16::from_be_bytes([data[*pos], data[*pos + 1]]) as usize;
     *pos += 2;
-    if *pos + len > data.len() { return None; }
-    let s = String::from_utf8_lossy(&data[*pos..*pos+len]).to_string();
+    if *pos + len > data.len() {
+        return None;
+    }
+    let s = String::from_utf8_lossy(&data[*pos..*pos + len]).to_string();
     *pos += len;
     Some(s)
 }
 
 /// Хелпер для `Identifier`-каналов (1.13+).
-pub fn to_legacy_channel(id: &Identifier) -> String { format!("{}:{}", id.namespace, id.path) }
+pub fn to_legacy_channel(id: &Identifier) -> String {
+    format!("{}:{}", id.namespace, id.path)
+}
 
 #[cfg(test)]
 mod tests {
@@ -125,7 +172,9 @@ mod tests {
     use std::sync::{Arc, Mutex};
     struct Capture(Arc<Mutex<Vec<u8>>>);
     impl PluginMessageListener for Capture {
-        fn on_plugin_message(&self, _p: Option<uuid::Uuid>, _c: &str, d: &[u8]) { self.0.lock().unwrap().extend_from_slice(d); }
+        fn on_plugin_message(&self, _p: Option<uuid::Uuid>, _c: &str, d: &[u8]) {
+            self.0.lock().unwrap().extend_from_slice(d);
+        }
     }
     #[test]
     fn incoming_dispatch() {

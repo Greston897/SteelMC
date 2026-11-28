@@ -5,31 +5,61 @@
 //! Steel повторяет 1:1 + даёт хуки для каждого мини-часта (генератор, биом, структура).
 //! MultiWorld-плагин теперь — 30 строк, а не 3000.
 
-use steel_utils::{BlockPos, Identifier};
-use steel_utils::locks::SyncRwLock;
 use rustc_hash::FxHashMap;
 use std::sync::Arc;
+use steel_utils::locks::SyncRwLock;
+use steel_utils::{BlockPos, Identifier};
 
 /// Сложность как в ванили.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-pub enum Difficulty { Peaceful, Easy, Normal, #[default] Hard }
-impl std::fmt::Display for Difficulty { fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result { write!(f, "{self:?}") } }
+pub enum Difficulty {
+    Peaceful,
+    Easy,
+    Normal,
+    #[default]
+    Hard,
+}
+impl std::fmt::Display for Difficulty {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self:?}")
+    }
+}
 
 /// Тип мира — overworld/nether/end/custom.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum WorldEnv { Normal, Nether, TheEnd, Custom(Identifier) }
-impl Default for WorldEnv { fn default() -> Self { Self::Normal } }
+pub enum WorldEnv {
+    Normal,
+    Nether,
+    TheEnd,
+    Custom(Identifier),
+}
+impl Default for WorldEnv {
+    fn default() -> Self {
+        Self::Normal
+    }
+}
 
 /// Тип генерации — как в `level.dat:generator`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-pub enum WorldType { #[default] Normal, Flat, LargeBiomes, Amplified, SingleBiome }
+pub enum WorldType {
+    #[default]
+    Normal,
+    Flat,
+    LargeBiomes,
+    Amplified,
+    SingleBiome,
+}
 
 /// Геймрулы ванили (часть, остальные — строкой).
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct GameRules(pub FxHashMap<String, String>);
 impl GameRules {
-    pub fn set(&mut self, k: impl Into<String>, v: impl Into<String>) { self.0.insert(k.into(), v.into()); }
-    pub fn get(&self, k: &str) -> Option<&String> { self.0.get(k) }
+    pub fn set(&mut self, k: impl Into<String>, v: impl Into<String>) {
+        self.0.insert(k.into(), v.into());
+    }
+    pub fn get(&self, k: &str) -> Option<&String> {
+        self.0.get(k)
+    }
 }
 
 /// Бордер — `WorldBorder` 1:1.
@@ -45,17 +75,40 @@ pub struct WorldBorder {
 }
 impl Default for WorldBorder {
     fn default() -> Self {
-        Self { center_x: 0.0, center_z: 0.0, size: 59_999_968.0, damage_buffer: 5.0, damage_per_block: 0.2, warning_blocks: 5, warning_time: 15 }
+        Self {
+            center_x: 0.0,
+            center_z: 0.0,
+            size: 59_999_968.0,
+            damage_buffer: 5.0,
+            damage_per_block: 0.2,
+            warning_blocks: 5,
+            warning_time: 15,
+        }
     }
 }
 impl WorldBorder {
-    pub fn new(center_x: f64, center_z: f64, size: f64) -> Self { Self { center_x, center_z, size, ..Default::default() } }
-    pub fn set_center(&mut self, x: f64, z: f64) { self.center_x = x; self.center_z = z; }
-    pub fn set_size(&mut self, s: f64) { self.size = s.clamp(1.0, 59_999_968.0); }
+    pub fn new(center_x: f64, center_z: f64, size: f64) -> Self {
+        Self {
+            center_x,
+            center_z,
+            size,
+            ..Default::default()
+        }
+    }
+    pub fn set_center(&mut self, x: f64, z: f64) {
+        self.center_x = x;
+        self.center_z = z;
+    }
+    pub fn set_size(&mut self, s: f64) {
+        self.size = s.clamp(1.0, 59_999_968.0);
+    }
     /// Проверка внутри ли бордера — ваниль формула.
     pub fn is_inside(&self, x: f64, z: f64) -> bool {
         let r = self.size / 2.0;
-        x >= self.center_x - r && x <= self.center_x + r && z >= self.center_z - r && z <= self.center_z + r
+        x >= self.center_x - r
+            && x <= self.center_x + r
+            && z >= self.center_z - r
+            && z <= self.center_z + r
     }
 }
 
@@ -99,14 +152,38 @@ impl WorldCreator {
             border: WorldBorder::default(),
         }
     }
-    pub fn env(mut self, e: WorldEnv) -> Self { self.env = e; self }
-    pub fn seed(mut self, s: i64) -> Self { self.seed = Some(s); self }
-    pub fn generator(mut self, id: impl Into<String>) -> Self { self.generator = Some(id.into()); self }
-    pub fn biome(mut self, id: impl Into<String>) -> Self { self.biome_provider = Some(id.into()); self }
-    pub fn spawn(mut self, pos: BlockPos) -> Self { self.spawn = pos; self }
-    pub fn border(mut self, b: WorldBorder) -> Self { self.border = b; self }
-    pub fn hardcore(mut self, v: bool) -> Self { self.hardcore = v; self }
-    pub fn gamerule(mut self, k: impl Into<String>, v: impl Into<String>) -> Self { self.gamerules.set(k, v); self }
+    pub fn env(mut self, e: WorldEnv) -> Self {
+        self.env = e;
+        self
+    }
+    pub fn seed(mut self, s: i64) -> Self {
+        self.seed = Some(s);
+        self
+    }
+    pub fn generator(mut self, id: impl Into<String>) -> Self {
+        self.generator = Some(id.into());
+        self
+    }
+    pub fn biome(mut self, id: impl Into<String>) -> Self {
+        self.biome_provider = Some(id.into());
+        self
+    }
+    pub fn spawn(mut self, pos: BlockPos) -> Self {
+        self.spawn = pos;
+        self
+    }
+    pub fn border(mut self, b: WorldBorder) -> Self {
+        self.border = b;
+        self
+    }
+    pub fn hardcore(mut self, v: bool) -> Self {
+        self.hardcore = v;
+        self
+    }
+    pub fn gamerule(mut self, k: impl Into<String>, v: impl Into<String>) -> Self {
+        self.gamerules.set(k, v);
+        self
+    }
 }
 
 /// Менеджер миров — хранит все `WorldCreator` + живые `World`.
@@ -114,22 +191,42 @@ pub struct WorldManager {
     creators: SyncRwLock<FxHashMap<String, WorldCreator>>,
     // хуки для проверки canLoad/canUnload — аналог `WorldLoadEvent`/`WorldUnloadEvent`
 }
-impl Default for WorldManager { fn default() -> Self { Self::new() } }
+impl Default for WorldManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl WorldManager {
-    pub fn new() -> Self { Self { creators: SyncRwLock::new(FxHashMap::default()) } }
+    pub fn new() -> Self {
+        Self {
+            creators: SyncRwLock::new(FxHashMap::default()),
+        }
+    }
 
     pub fn register(&self, creator: WorldCreator) -> bool {
         let mut w = self.creators.write();
-        if w.contains_key(&creator.name) { return false; }
+        if w.contains_key(&creator.name) {
+            return false;
+        }
         w.insert(creator.name.clone(), creator);
         true
     }
-    pub fn get(&self, name: &str) -> Option<WorldCreator> { self.creators.read().get(name).cloned() }
-    pub fn all(&self) -> Vec<WorldCreator> { self.creators.read().values().cloned().collect() }
-    pub fn remove(&self, name: &str) -> bool { self.creators.write().remove(name).is_some() }
+    pub fn get(&self, name: &str) -> Option<WorldCreator> {
+        self.creators.read().get(name).cloned()
+    }
+    pub fn all(&self) -> Vec<WorldCreator> {
+        self.creators.read().values().cloned().collect()
+    }
+    pub fn remove(&self, name: &str) -> bool {
+        self.creators.write().remove(name).is_some()
+    }
 
     /// Создать мир синхронно — вызывает `SteelServer::create_world`.
-    pub fn create<S: crate::server::SteelServer>(&self, server: &S, creator: WorldCreator) -> Option<Arc<dyn crate::world::World>> {
+    pub fn create<S: crate::server::SteelServer>(
+        &self,
+        server: &S,
+        creator: WorldCreator,
+    ) -> Option<Arc<dyn crate::world::World>> {
         let name = creator.name.clone();
         self.register(creator.clone());
         server.create_world(&name, creator.seed)
@@ -138,9 +235,17 @@ impl WorldManager {
 
 /// Трейт для плагина MultiWorld — 1:1 с `MultiverseCore`.
 pub trait MultiWorldHook: Send + Sync + 'static {
-    fn on_pre_create(&self, creator: &mut WorldCreator) -> bool { let _ = creator; true }
-    fn on_post_create(&self, world: &dyn crate::world::World) { let _ = world; }
-    fn on_pre_unload(&self, name: &str) -> bool { let _ = name; true }
+    fn on_pre_create(&self, creator: &mut WorldCreator) -> bool {
+        let _ = creator;
+        true
+    }
+    fn on_post_create(&self, world: &dyn crate::world::World) {
+        let _ = world;
+    }
+    fn on_pre_unload(&self, name: &str) -> bool {
+        let _ = name;
+        true
+    }
 }
 
 /// Пример MultiWorld-плагина на 30 строк:
@@ -169,10 +274,16 @@ mod tests {
     }
     #[test]
     fn creator_builder() {
-        let c = WorldCreator::new("test").seed(42).env(WorldEnv::Nether).gamerule("keepInventory", "true");
+        let c = WorldCreator::new("test")
+            .seed(42)
+            .env(WorldEnv::Nether)
+            .gamerule("keepInventory", "true");
         assert_eq!(c.seed, Some(42));
         assert_eq!(c.env, WorldEnv::Nether);
-        assert_eq!(c.gamerules.get("keepInventory").map(|s| s.as_str()), Some("true"));
+        assert_eq!(
+            c.gamerules.get("keepInventory").map(|s| s.as_str()),
+            Some("true")
+        );
     }
     #[test]
     fn manager_crud() {

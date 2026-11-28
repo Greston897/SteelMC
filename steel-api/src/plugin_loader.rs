@@ -66,28 +66,48 @@ use serde::{Deserialize, Serialize};
 
 /// Статус загрузки — как `PluginState`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LoadState { Discovered, Parsed, Resolved, Loaded, Enabled, Disabled, Failed }
+pub enum LoadState {
+    Discovered,
+    Parsed,
+    Resolved,
+    Loaded,
+    Enabled,
+    Disabled,
+    Failed,
+}
 
 /// Тип плагина — как компилируется.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum PluginType { Static, DynamicCdylib, Wasm }
+pub enum PluginType {
+    Static,
+    DynamicCdylib,
+    Wasm,
+}
 
 /// Команда из дескриптора — `commands:` секция.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct CommandSpec {
-    #[serde(default)] pub description: String,
-    #[serde(default)] pub aliases: Vec<String>,
-    #[serde(default)] pub permission: String,
-    #[serde(default)] pub permission_message: String,
-    #[serde(default)] pub usage: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
+    pub aliases: Vec<String>,
+    #[serde(default)]
+    pub permission: String,
+    #[serde(default)]
+    pub permission_message: String,
+    #[serde(default)]
+    pub usage: String,
 }
 
 /// Права из дескриптора — `permissions:` секция.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct PermissionSpec {
-    #[serde(default)] pub description: String,
-    #[serde(default)] pub default: String, // true/false/op/notop
-    #[serde(default)] pub children: std::collections::HashMap<String, bool>,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
+    pub default: String, // true/false/op/notop
+    #[serde(default)]
+    pub children: std::collections::HashMap<String, bool>,
 }
 
 /// Полный дескриптор с ресурсами — расширяет `PluginDescriptor`.
@@ -96,47 +116,85 @@ pub struct PluginSpec {
     pub name: String,
     pub version: String,
     pub main: String,
-    #[serde(default = "default_api")] pub api_version: String,
-    #[serde(default)] pub description: String,
-    #[serde(default)] pub author: String,
-    #[serde(default)] pub authors: Vec<String>,
-    #[serde(default)] pub contributors: Vec<String>,
-    #[serde(default)] pub website: String,
-    #[serde(default)] pub prefix: String,
-    #[serde(default)] pub load: String, // STARTUP/POSTWORLD
-    #[serde(default)] pub depend: Vec<String>,
-    #[serde(default)] pub softdepend: Vec<String>,
-    #[serde(default)] pub loadbefore: Vec<String>,
-    #[serde(default)] pub provides: Vec<String>,
-    #[serde(default)] pub libraries: Vec<String>,
-    #[serde(default)] pub folia_supported: bool,
-    #[serde(default)] pub commands: std::collections::HashMap<String, CommandSpec>,
-    #[serde(default)] pub permissions: std::collections::HashMap<String, PermissionSpec>,
-    #[serde(default)] pub plugin_type: Option<PluginType>,
+    #[serde(default = "default_api")]
+    pub api_version: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
+    pub author: String,
+    #[serde(default)]
+    pub authors: Vec<String>,
+    #[serde(default)]
+    pub contributors: Vec<String>,
+    #[serde(default)]
+    pub website: String,
+    #[serde(default)]
+    pub prefix: String,
+    #[serde(default)]
+    pub load: String, // STARTUP/POSTWORLD
+    #[serde(default)]
+    pub depend: Vec<String>,
+    #[serde(default)]
+    pub softdepend: Vec<String>,
+    #[serde(default)]
+    pub loadbefore: Vec<String>,
+    #[serde(default)]
+    pub provides: Vec<String>,
+    #[serde(default)]
+    pub libraries: Vec<String>,
+    #[serde(default)]
+    pub folia_supported: bool,
+    #[serde(default)]
+    pub commands: std::collections::HashMap<String, CommandSpec>,
+    #[serde(default)]
+    pub permissions: std::collections::HashMap<String, PermissionSpec>,
+    #[serde(default)]
+    pub plugin_type: Option<PluginType>,
 }
-fn default_api() -> String { crate::API_VERSION.to_string() }
+fn default_api() -> String {
+    crate::API_VERSION.to_string()
+}
 
 impl PluginSpec {
     pub fn validate(&self) -> Result<(), String> {
-        if self.name.is_empty() || self.name.len() > 64 { return Err("name 1..64".into()); }
-        if !self.name.chars().all(|c| c.is_ascii_alphanumeric() || c=='.' || c=='_' || c=='-') { return Err("name charset".into()); }
-        if self.version.is_empty() { return Err("version required".into()); }
-        if self.main.is_empty() { return Err("main required".into()); }
+        if self.name.is_empty() || self.name.len() > 64 {
+            return Err("name 1..64".into());
+        }
+        if !self
+            .name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '_' || c == '-')
+        {
+            return Err("name charset".into());
+        }
+        if self.version.is_empty() {
+            return Err("version required".into());
+        }
+        if self.main.is_empty() {
+            return Err("main required".into());
+        }
         Ok(())
     }
     /// Парс `plugin.yml` (YAML).
     pub fn from_yaml(yaml: &str) -> Result<Self, String> {
-        serde_yaml::from_str::<serde_yaml::Value>(yaml).map_err(|e| e.to_string())
+        serde_yaml::from_str::<serde_yaml::Value>(yaml)
+            .map_err(|e| e.to_string())
             .and_then(|v| serde_yaml::from_value::<PluginSpec>(v).map_err(|e| e.to_string()))
-            // fallback via json conversion for missing fields
+        // fallback via json conversion for missing fields
     }
     /// Парс `steel-plugin.toml`.
     pub fn from_toml(toml_str: &str) -> Result<Self, String> {
-        toml::from_str::<toml::Value>(toml_str).map_err(|e| e.to_string())
+        toml::from_str::<toml::Value>(toml_str)
+            .map_err(|e| e.to_string())
             .and_then(|v| {
                 // поддержка как [plugin] секция, так и корень
-                if let Some(tbl) = v.get("plugin") { tbl.clone().try_into().map_err(|e: toml::de::Error| e.to_string()) }
-                else { v.try_into().map_err(|e: toml::de::Error| e.to_string()) }
+                if let Some(tbl) = v.get("plugin") {
+                    tbl.clone()
+                        .try_into()
+                        .map_err(|e: toml::de::Error| e.to_string())
+                } else {
+                    v.try_into().map_err(|e: toml::de::Error| e.to_string())
+                }
             })
     }
 }
@@ -150,10 +208,14 @@ impl PluginDiscovery {
         if let Ok(rd) = std::fs::read_dir(dir) {
             for e in rd.flatten() {
                 let p = e.path();
-                if p.is_dir() && (p.join("plugin.yml").exists() || p.join("steel-plugin.toml").exists()) {
+                if p.is_dir()
+                    && (p.join("plugin.yml").exists() || p.join("steel-plugin.toml").exists())
+                {
                     out.push(p);
                 } else if let Some(ext) = p.extension().and_then(|s| s.to_str()) {
-                    if ["so","dll","dylib","wasm"].contains(&ext) { out.push(p); }
+                    if ["so", "dll", "dylib", "wasm"].contains(&ext) {
+                        out.push(p);
+                    }
                 }
             }
         }
@@ -170,16 +232,24 @@ impl PluginDiscovery {
             } else if yml.exists() {
                 let s = std::fs::read_to_string(yml).map_err(|e| e.to_string())?;
                 PluginSpec::from_yaml(&s)
-            } else { Err("no descriptor".into()) }
+            } else {
+                Err("no descriptor".into())
+            }
         } else {
             // cdylib — ищем рядом .toml/.yml с тем же stem
             let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
             let dir = path.parent().unwrap_or(Path::new("."));
-            for cand in [dir.join(format!("{stem}.toml")), dir.join(format!("{stem}.yml"))] {
+            for cand in [
+                dir.join(format!("{stem}.toml")),
+                dir.join(format!("{stem}.yml")),
+            ] {
                 if cand.exists() {
                     let s = std::fs::read_to_string(cand).map_err(|e| e.to_string())?;
-                    if cand.extension().and_then(|s| s.to_str()) == Some("toml") { return PluginSpec::from_toml(&s); }
-                    else { return PluginSpec::from_yaml(&s); }
+                    if cand.extension().and_then(|s| s.to_str()) == Some("toml") {
+                        return PluginSpec::from_toml(&s);
+                    } else {
+                        return PluginSpec::from_yaml(&s);
+                    }
                 }
             }
             Err("cdylib needs sidecar descriptor".into())
@@ -205,23 +275,37 @@ impl Drop for PluginHandle {
     }
 }
 impl PluginHandle {
-    pub fn new(spec: PluginSpec) -> Self { Self { spec, state: LoadState::Discovered, listeners: Vec::new(), tasks: Vec::new() } }
-    pub fn track_listener(&mut self, h: crate::event::ListenerHandle) { self.listeners.push(h); }
-    pub fn track_task(&mut self, id: crate::scheduler::TaskId) { self.tasks.push(id); }
+    pub fn new(spec: PluginSpec) -> Self {
+        Self {
+            spec,
+            state: LoadState::Discovered,
+            listeners: Vec::new(),
+            tasks: Vec::new(),
+        }
+    }
+    pub fn track_listener(&mut self, h: crate::event::ListenerHandle) {
+        self.listeners.push(h);
+    }
+    pub fn track_task(&mut self, id: crate::scheduler::TaskId) {
+        self.tasks.push(id);
+    }
 }
 
 /// Зависимости — топосорт как в Bukkit `SimplePluginManager`.
 pub fn sort_plugins(specs: Vec<PluginSpec>) -> Result<Vec<PluginSpec>, String> {
     // Kahn — упорядочить по depend/softdepend/loadbefore
     // упрощённо: сортируем по имени, проверяем наличие depend
-    let map: std::collections::HashMap<String, PluginSpec> = specs.into_iter().map(|s| (s.name.clone(), s)).collect();
+    let map: std::collections::HashMap<String, PluginSpec> =
+        specs.into_iter().map(|s| (s.name.clone(), s)).collect();
     for (name, spec) in &map {
         for dep in &spec.depend {
-            if !map.contains_key(dep) { return Err(format!("plugin {name} missing depend {dep}")); }
+            if !map.contains_key(dep) {
+                return Err(format!("plugin {name} missing depend {dep}"));
+            }
         }
     }
     let mut out: Vec<PluginSpec> = map.into_values().collect();
-    out.sort_by(|a,b| a.name.cmp(&b.name));
+    out.sort_by(|a, b| a.name.cmp(&b.name));
     Ok(out)
 }
 
@@ -244,8 +328,33 @@ depend = ["Vault"]
     }
     #[test]
     fn sort_ok() {
-        let a = PluginSpec { name: "a".into(), version: "1".into(), main: "a::M".into(), api_version: "26.3".into(), description: "".into(), author: "".into(), authors: vec![], contributors: vec![], website: "".into(), prefix: "".into(), load: "POSTWORLD".into(), depend: vec![], softdepend: vec![], loadbefore: vec![], provides: vec![], libraries: vec![], folia_supported: false, commands: Default::default(), permissions: Default::default(), plugin_type: None };
-        let b = PluginSpec { name: "b".into(), depend: vec!["a".into()], ..a.clone() };
+        let a = PluginSpec {
+            name: "a".into(),
+            version: "1".into(),
+            main: "a::M".into(),
+            api_version: "26.3".into(),
+            description: "".into(),
+            author: "".into(),
+            authors: vec![],
+            contributors: vec![],
+            website: "".into(),
+            prefix: "".into(),
+            load: "POSTWORLD".into(),
+            depend: vec![],
+            softdepend: vec![],
+            loadbefore: vec![],
+            provides: vec![],
+            libraries: vec![],
+            folia_supported: false,
+            commands: Default::default(),
+            permissions: Default::default(),
+            plugin_type: None,
+        };
+        let b = PluginSpec {
+            name: "b".into(),
+            depend: vec!["a".into()],
+            ..a.clone()
+        };
         let sorted = sort_plugins(vec![b.clone(), a.clone()]).unwrap();
         assert_eq!(sorted[0].name, "a");
     }
