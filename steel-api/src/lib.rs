@@ -32,6 +32,8 @@
 #![allow(clippy::must_use_candidate, reason = "many API methods are optionally used, not every getter needs must_use")]
 #![allow(clippy::missing_const_for_fn, reason = "const fn is not needed for many API methods, keep simple")]
 #![allow(clippy::doc_markdown, reason = "docs contain many Minecraft terms, backticks not needed for every word")]
+#![allow(clippy::doc_lazy_continuation, reason = "dash lists in module docs")]
+#![allow(clippy::derivable_impls, reason = "manual Default for enums with custom variant is clearer")]
 #![allow(clippy::module_name_repetitions, reason = "steel_api module names intentionally repeat for clarity")]
 #![allow(clippy::absolute_paths, reason = "API uses absolute paths for clarity in examples")]
 #![allow(clippy::needless_pass_by_value, reason = "API takes owned values for ergonomics")]
