@@ -59,7 +59,7 @@ impl AttributeInstance {
         for m in self.modifiers.values() { if m.operation==Operation::AddMultipliedBase { mul_base+=m.amount; } }
         v += self.base * mul_base;
         let mut mul_total=1.0;
-        for m in self.modifiers.values() { if m.operation==Operation::AddMultipliedTotal { mul_total*=(1.0+m.amount); } }
+        for m in self.modifiers.values() { if m.operation==Operation::AddMultipliedTotal { mul_total*=1.0+m.amount; } }
         v * mul_total
     }
 }

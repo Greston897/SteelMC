@@ -46,6 +46,8 @@
 #![allow(clippy::unwrap_used, reason = "examples use unwrap, core API uses expect")]
 #![allow(clippy::print_stdout, reason = "examples print")]
 #![allow(unused_imports, reason = "some imports used only in tests")]
+#![allow(unused_mut, reason = "clippy recommends not mut where not needed, but code is clearer with mut")]
+#![allow(unused_variables, reason = "API examples have unused vars for brevity")]
 
 use steel_protocol as _;
 

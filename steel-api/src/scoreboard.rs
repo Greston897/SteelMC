@@ -14,7 +14,7 @@ pub enum DisplaySlot {
     TeamGold, TeamGray, TeamDarkGray, TeamBlue, TeamGreen, TeamAqua, TeamRed, TeamLightPurple, TeamYellow, TeamWhite,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Criteria {
     Dummy,
     Trigger,

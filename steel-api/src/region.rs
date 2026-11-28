@@ -34,11 +34,11 @@ impl Region {
         Self { id: id.into(), world: world.into(), min, max, priority: 0, owners: Vec::new(), members: Vec::new(), flags: FxHashMap::default(), parent: None }
     }
     pub fn contains(&self, pos: BlockPos) -> bool {
-        pos.x >= self.min.x.min(self.max.x) && pos.x <= self.min.x.max(self.max.x) &&
-        pos.y >= self.min.y.min(self.max.y) && pos.y <= self.min.y.max(self.max.y) &&
-        pos.z >= self.min.z.min(self.max.z) && pos.z <= self.min.z.max(self.max.z)
+        pos.x() >= self.min.x().min(self.max.x()) && pos.x() <= self.min.x().max(self.max.x()) &&
+        pos.y() >= self.min.y().min(self.max.y()) && pos.y() <= self.min.y().max(self.max.y()) &&
+        pos.z() >= self.min.z().min(self.max.z()) && pos.z() <= self.min.z().max(self.max.z())
     }
-    pub fn volume(&self) -> i64 { let dx=(self.max.x-self.min.x).abs() as i64 +1; let dy=(self.max.y-self.min.y).abs() as i64 +1; let dz=(self.max.z-self.min.z).abs() as i64 +1; dx*dy*dz }
+    pub fn volume(&self) -> i64 { let dx=(self.max.x()-self.min.x()).abs() as i64 +1; let dy=(self.max.y()-self.min.y()).abs() as i64 +1; let dz=(self.max.z()-self.min.z()).abs() as i64 +1; dx*dy*dz }
     pub fn set_flag(&mut self, f: Flag, s: FlagState) { self.flags.insert(f, s); }
     pub fn get_flag(&self, f: Flag) -> FlagState { self.flags.get(&f).cloned().unwrap_or(FlagState::None) }
     pub fn is_owner(&self, id: uuid::Uuid) -> bool { self.owners.contains(&id) }

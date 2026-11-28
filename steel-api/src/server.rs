@@ -43,8 +43,8 @@ pub trait SteelServer: Send + Sync + 'static {
     fn unload_world(&self, _name: &str, _save: bool) -> bool { false }
 
     // — широковещание —
-    fn broadcast(&self, msg: impl AsRef<str>);
-    fn broadcast_component(&self, _component: &crate::chat::Component) { self.broadcast(_component.to_legacy()); }
+    fn broadcast(&self, msg: &str);
+    fn broadcast_component(&self, component: &crate::chat::Component) { self.broadcast(&component.to_legacy()); }
     fn shutdown(&self);
     fn reload(&self) {}
     fn is_primary_thread(&self) -> bool { true }
@@ -66,7 +66,7 @@ pub trait SteelServer: Send + Sync + 'static {
 
     // — мотд / иконка / пинг —
     fn motd(&self) -> String { "Steel powered by SteelAPI".into() }
-    fn set_motd(&self, _motd: impl Into<String>) {}
+    fn set_motd(&self, motd: &str) {}
     fn server_icon(&self) -> Option<Vec<u8>> { None }
 }
 
@@ -78,7 +78,7 @@ pub struct ServerHandle {
 impl ServerHandle {
     pub fn new(inner: Arc<dyn SteelServer>) -> Self { Self { inner } }
     pub fn inner(&self) -> &Arc<dyn SteelServer> { &self.inner }
-    pub fn broadcast(&self, msg: impl AsRef<str>) { self.inner.broadcast(msg); }
+    pub fn broadcast(&self, msg: &str) { self.inner.broadcast(msg); }
     pub fn shutdown(&self) { self.inner.shutdown(); }
 }
 
@@ -92,6 +92,6 @@ impl SteelServer for DummyServer {
     fn offline_player(&self, _id: uuid::Uuid) -> Option<Arc<dyn Player>> { None }
     fn worlds(&self) -> Vec<Arc<dyn World>> { Vec::new() }
     fn get_world(&self, _name: &str) -> Option<Arc<dyn World>> { None }
-    fn broadcast(&self, msg: impl AsRef<str>) { log::info!("[broadcast] {}", msg.as_ref()); }
+    fn broadcast(&self, msg: &str) { log::info!("[broadcast] {}", msg); }
     fn shutdown(&self) { log::info!("shutdown requested"); }
 }

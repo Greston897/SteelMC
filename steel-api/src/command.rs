@@ -260,7 +260,7 @@ impl CommandRegistryHandle {
     /// Заменить существующую ваниль-команду целиком — пример для `/give`.
     /// После этого `/give` идёт только через твой плагин, ваниль не вызывается.
     /// Вернуть обратно — `unregister` + `register(old)`.
-    pub fn override_vanilla(&self, name: &str, new_node: CommandNode) -> Result<Option<CommandNode>, CommandError> {
+    pub fn override_vanilla(&self, _name: &str, new_node: CommandNode) -> Result<Option<CommandNode>, CommandError> {
         Ok(self.register_override(new_node))
         // в ядре тут ещё снимается бриг-диспатчер ванили
     }

@@ -21,10 +21,10 @@ pub trait Player: Send + Sync + 'static {
     fn has_permission(&self, perm: &str) -> bool;
 
     // — сообщения —
-    fn send_message(&self, msg: impl AsRef<str>);
-    fn send_action_bar(&self, msg: impl AsRef<str>);
-    fn send_title(&self, title: impl AsRef<str>, subtitle: impl AsRef<str>, fade_in: i32, stay: i32, fade_out: i32);
-    fn kick(&self, reason: impl AsRef<str>);
+    fn send_message(&self, msg: &str);
+    fn send_action_bar(&self, msg: &str);
+    fn send_title(&self, title: &str, subtitle: &str, fade_in: i32, stay: i32, fade_out: i32);
+    fn kick(&self, reason: &str);
 
     // — телепорт/движение —
     fn teleport(&self, pos: DVec3, yaw: f32, pitch: f32) -> bool;

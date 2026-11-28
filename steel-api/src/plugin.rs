@@ -119,7 +119,7 @@ pub struct PluginContext {
 }
 
 impl PluginContext {
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, reason = "PluginContext needs many deps")]
     pub fn new(
         descriptor: PluginDescriptor,
         data_folder: PathBuf,
@@ -147,7 +147,7 @@ impl PluginContext {
     }
 
     /// Полный конструктор для ядра (с сервером).
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, reason = "PluginContext needs many deps")]
     pub fn new_full(
         descriptor: PluginDescriptor,
         data_folder: PathBuf,

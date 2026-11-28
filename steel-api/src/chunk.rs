@@ -53,15 +53,15 @@ pub struct ChunkRegion {
 
 impl ChunkRegion {
     pub fn new(a: ChunkPos, b: ChunkPos) -> Self {
-        Self { min: ChunkPos { x: a.x.min(b.x), z: a.z.min(b.z) }, max: ChunkPos { x: a.x.max(b.x), z: a.z.max(b.z) } }
+        Self { min: ChunkPos::new(a.x().min(b.x()), a.z().min(b.z())), max: ChunkPos::new(a.x().max(b.x()), a.z().max(b.z())) }
     }
-    pub fn contains(&self, p: ChunkPos) -> bool { p.x >= self.min.x && p.x <= self.max.x && p.z >= self.min.z && p.z <= self.max.z }
-    pub fn volume(&self) -> usize { ((self.max.x - self.min.x +1) as usize) * ((self.max.z - self.min.z +1) as usize) }
-    pub fn for_each(&self, mut f: impl FnMut(ChunkPos)) { for x in self.min.x..=self.max.x { for z in self.min.z..=self.max.z { f(ChunkPos{x,z}); } } }
+    pub fn contains(&self, p: ChunkPos) -> bool { p.x() >= self.min.x() && p.x() <= self.max.x() && p.z() >= self.min.z() && p.z() <= self.max.z() }
+    pub fn volume(&self) -> usize { ((self.max.x() - self.min.x() +1) as usize) * ((self.max.z() - self.min.z() +1) as usize) }
+    pub fn for_each(&self, mut f: impl FnMut(ChunkPos)) { for x in self.min.x()..=self.max.x() { for z in self.min.z()..=self.max.z() { f(ChunkPos::new(x, z)); } } }
 }
 
 /// WorldEdit-like clipboard.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Clipboard {
     pub origin: BlockPos,
     pub size_x: i32,
@@ -77,15 +77,18 @@ impl Clipboard {
     pub fn rotate_y90(&mut self) { /* упрощённо */ }
     pub fn flip_x(&mut self) { /* */ }
 }
+impl Default for Clipboard {
+    fn default() -> Self { Self { origin: BlockPos::new(0, 0, 0), size_x: 0, size_y: 0, size_z: 0, blocks: Vec::new() } }
+}
 
 /// Хелпер для быстрой заливки — аналог `World#fill` / Paper `Chunk#fill`.
 pub fn fill_area(world: &dyn crate::world::World, min: BlockPos, max: BlockPos, state: BlockStateId) -> usize {
     let mut n = 0;
-    for x in min.x..=max.x { for y in min.y..=max.y { for z in min.z..=max.z { if world.set_block(BlockPos::new(x,y,z), state, 2) { n+=1; } } } }
+    for x in min.x()..=max.x() { for y in min.y()..=max.y() { for z in min.z()..=max.z() { if world.set_block(BlockPos::new(x,y,z), state, 2) { n+=1; } } } }
     n
 }
 
 pub trait ChunkView {
     fn chunk_pos(&self) -> ChunkPos;
-    fn distance_to(&self, other: ChunkPos) -> f64 { let dx=(self.chunk_pos().x-other.x) as f64; let dz=(self.chunk_pos().z-other.z) as f64; (dx*dx+dz*dz).sqrt() }
+    fn distance_to(&self, other: ChunkPos) -> f64 { let dx=(self.chunk_pos().x()-other.x()) as f64; let dz=(self.chunk_pos().z()-other.z()) as f64; (dx*dx+dz*dz).sqrt() }
 }
