@@ -68,9 +68,9 @@ impl ConfigManager {
         ConfigFile::new(self.folder.join(name), default)
     }
     pub fn json_file<T: DeserializeOwned + Serialize + Clone + Default>(&self, name: &str, default: T) -> ConfigFile<T> {
-        self.file(format!("{name}.json"), default)
+        self.file(&format!("{name}.json"), default)
     }
     pub fn yaml_file<T: DeserializeOwned + Serialize + Clone + Default>(&self, name: &str, default: T) -> ConfigFile<T> {
-        self.file(format!("{name}.yml"), default)
+        self.file(&format!("{name}.yml"), default)
     }
 }
